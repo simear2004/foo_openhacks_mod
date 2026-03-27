@@ -5,6 +5,7 @@
 .vs/
 ipch/
 JSON/
+open*/
 .qoder/
 *.fb2k-component
 *.aps
