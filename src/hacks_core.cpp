@@ -151,6 +151,12 @@ bool OpenHacksCore::CheckIncompatibleComponents()
 void OpenHacksCore::ApplyMainWindowFrameStyle(WindowFrameStyle newStyle)
 {
     HWND mainWindow = core_api::get_main_window();
+
+    // Check if window is maximized before style change
+    WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
+    GetWindowPlacement(mainWindow, &wp);
+    bool wasMaximized = (wp.showCmd == SW_SHOWMAXIMIZED);
+
     const LONG currentStyle = static_cast<LONG>(GetWindowLongPtr(mainWindow, GWL_STYLE));
     LONG style = currentStyle;
     switch (newStyle)
@@ -182,4 +188,21 @@ void OpenHacksCore::ApplyMainWindowFrameStyle(WindowFrameStyle newStyle)
 
     // notify frame changes
     SetWindowPos(mainWindow, HWND_TOP, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+    // Fix: Force fullscreen for maximized NoBorder windows to cover taskbar
+    if (wasMaximized && newStyle == WindowFrameStyle::NoBorder)
+    {
+        if (HMONITOR monitor = MonitorFromWindow(mainWindow, MONITOR_DEFAULTTONEAREST))
+        {
+            MONITORINFO mi = { sizeof(MONITORINFO) };
+            if (GetMonitorInfo(monitor, &mi))
+            {
+                SetWindowPos(mainWindow, HWND_TOP,
+                    mi.rcMonitor.left, mi.rcMonitor.top,
+                    mi.rcMonitor.right - mi.rcMonitor.left,
+                    mi.rcMonitor.bottom - mi.rcMonitor.top,
+                    SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+        }
+    }
 }
