@@ -71,7 +71,7 @@ void UIPrefMainWindowDialog::OnCommand(UINT code, int id, CWindow ctrl)
     case IDC_CHECK_TOP:
     case IDC_CHECK_BOTTOM:
     case IDC_CHECK_RIGHT:
-        if (code == BN_SETFOCUS || code == BN_KILLFOCUS)
+        if (code == BN_SETFOCUS || code == BN_KILLFOCUS || code == BN_CLICKED)
             ShowOrHidePseudoCaptionOverlayAutomatically();
 
         UpdateCtrlState();
@@ -118,7 +118,7 @@ void UIPrefMainWindowDialog::LoadUIState()
     const auto& marginStates = pseudoCaption.marginStates;
     SetupControl(IDC_CHECK_LEFT, IDC_EDIT_LEFT, IDC_SPIN_LEFT, marginStates.left, pseudoCaption.left);
     SetupControl(IDC_CHECK_TOP, IDC_EDIT_TOP, IDC_SPIN_TOP, marginStates.top, pseudoCaption.top);
-    SetupControl(IDC_CHECK_RIGHT, IDC_EDIT_RIGHT, IDC_SPIN_RIGHT, marginStates.top, pseudoCaption.right);
+    SetupControl(IDC_CHECK_RIGHT, IDC_EDIT_RIGHT, IDC_SPIN_RIGHT, marginStates.right, pseudoCaption.right);
     SetupControl(IDC_CHECK_BOTTOM, IDC_EDIT_BOTTOM, IDC_SPIN_BOTTOM, marginStates.bottom, pseudoCaption.bottom);
     SetupControl(0, IDC_EDIT_WIDTH, IDC_SPIN_WIDTH, false, pseudoCaption.width);
     SetupControl(0, IDC_EDIT_HEIGHT, IDC_SPIN_HEIGHT, false, pseudoCaption.height);

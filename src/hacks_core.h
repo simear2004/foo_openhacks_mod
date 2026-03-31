@@ -34,11 +34,15 @@ public:
 
     void ApplyMainWindowFrameStyle(WindowFrameStyle newStyle);
 
-    // Fullscreen operations
-    void ToggleFullscreen();
+    void Maximize();
+    void Restore();
+    bool IsMaximized();
+    bool IsMinimized();
 
-    // Window state accessors for maximize/restore operations
-    std::optional<WindowState>& SavedWindowState() { return mSavedWindowState; }
+    // Fullscreen operations
+    void EnterFullscreen();
+    void ExitFullscreen();
+    void ToggleFullscreen();
 
 private:
     FORCEINLINE static LRESULT CALLBACK StaticOpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)

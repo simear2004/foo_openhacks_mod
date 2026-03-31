@@ -1,0 +1,14 @@
+{
+  "name": "openhacks",
+  "version": "1.0.0",
+  "description": "A foobar2000 component with UI enhancements and window management features",
+  "homepage": "https://github.com/ttsping/foo_openhacks",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "minhook",
+      "version>=": "1.3.4"
+    }
+  ],
+  "builtin-baseline": "b5d1a94fb7f88fd835e360fd23a45a09ceedbf48"
+}

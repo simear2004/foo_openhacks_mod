@@ -91,6 +91,11 @@
     <IncludePath>$(ProjectDir);$(SolutionDir)dist\sdk\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)dist\sdk\foobar2000\shared\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgUseMD>true</VcpkgUseMD>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -184,6 +189,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="base_window.h" />
+    <ClInclude Include="com_utils.h" />
+    <ClInclude Include="hacks_com_impl.h" />
     <ClInclude Include="str.h" />
     <ClInclude Include="ui_overlay_window.h" />
     <ClInclude Include="win32_utils.h" />
@@ -205,6 +212,8 @@
   <ItemGroup>
     <ClCompile Include="base_window.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="hacks_com_impl.cpp" />
+    <ClCompile Include="hacks_com_impl2.cpp" />
     <ClCompile Include="hacks_core_rebar_proc.cpp" />
     <ClCompile Include="str.cpp" />
     <ClCompile Include="ui_overlay_window.cpp" />
@@ -248,6 +257,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.clang-format" />
+    <None Include="..\vcpkg.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hacks_com.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

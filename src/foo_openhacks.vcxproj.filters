@@ -2,11 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="hacks_main_menu.cpp" />
-    <ClCompile Include="hacks_menu.cpp" />
-    <ClCompile Include="hacks_vars.cpp" />
-    <ClCompile Include="hacks_init_callback.cpp" />
-    <ClCompile Include="hacks_version.cpp" />
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="ui\ui_dialog_base.cpp">
       <Filter>UI</Filter>
@@ -47,12 +42,30 @@
     <ClCompile Include="hacks_core_rebar_proc.cpp">
       <Filter>Core</Filter>
     </ClCompile>
+    <ClCompile Include="hacks_com_impl.cpp">
+      <Filter>COM</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_init_callback.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_main_menu.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_menu.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_vars.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_version.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_com_impl2.cpp">
+      <Filter>COM</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hacks_priv.h" />
-    <ClInclude Include="hacks_menu.h" />
-    <ClInclude Include="hacks_vars.h" />
-    <ClInclude Include="hacks_version.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="ui\ui_dialog_base.h">
       <Filter>UI</Filter>
@@ -91,6 +104,24 @@
     <ClInclude Include="str.h">
       <Filter>Utilities</Filter>
     </ClInclude>
+    <ClInclude Include="hacks_com_impl.h">
+      <Filter>COM</Filter>
+    </ClInclude>
+    <ClInclude Include="com_utils.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_com.h">
+      <Filter>COM</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_menu.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_vars.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_version.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resources">
@@ -105,6 +136,12 @@
     <Filter Include="Utilities">
       <UniqueIdentifier>{6b38c3ed-142b-46dc-b42b-cd250bb1760c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="COM">
+      <UniqueIdentifier>{9495ef38-1913-4250-882a-9eb1bf4e2cee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{4a7984fb-d911-497d-9b31-aec63138dbff}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="foo_openhacks.rc">
@@ -112,6 +149,11 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\.clang-format" />
+    <None Include="..\vcpkg.json">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\.clang-format">
+      <Filter>Resources</Filter>
+    </None>
   </ItemGroup>
 </Project>

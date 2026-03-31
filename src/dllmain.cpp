@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "hacks_version.h"
 #include <libPPUI/Controls.h>
+#include "hacks_com_impl.h"
 
 BOOL APIENTRY DllMain(HMODULE mod, DWORD reason, LPVOID /*reserved*/)
 {
@@ -10,8 +11,16 @@ BOOL APIENTRY DllMain(HMODULE mod, DWORD reason, LPVOID /*reserved*/)
     case DLL_PROCESS_ATTACH:
         DisableThreadLibraryCalls(mod);
         CSeparator::Register();
+        // Initialize COM automation server
+        if (SUCCEEDED(OleInitialize(nullptr)))
+            OpenHacksCOM::Initialise(mod);
         break;
+
     case DLL_PROCESS_DETACH:
+        // Finalize COM automation server
+        OpenHacksCOM::Finalise();
+        OleUninitialize();
+
         break;
     default:
         break;

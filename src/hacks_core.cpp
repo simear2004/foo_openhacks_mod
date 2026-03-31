@@ -182,46 +182,93 @@ void OpenHacksCore::ApplyMainWindowFrameStyle(WindowFrameStyle newStyle)
     }
 }
 
-void OpenHacksCore::ToggleFullscreen()
+void OpenHacksCore::Maximize()
 {
     HWND mainWindow = core_api::get_main_window();
-    if (mainWindow == nullptr)
-        return;
+    // Initialize saved state if not already
+    if (!mSavedWindowState.has_value())
+        mSavedWindowState.emplace();
+    Utility::Maximize(mainWindow, mSavedWindowState.value());
+    // Save to persistent storage
+    OpenHacksVars::SavedWindowState.get_value().FromWindowState(mSavedWindowState.value());
+}
 
-    if (!Utility::IsFullscreen(mainWindow))
+void OpenHacksCore::Restore()
+{
+    HWND mainWindow = core_api::get_main_window();
+    // Check if minimized - use standard restore
+    if (Utility::IsMinimized(mainWindow))
     {
-        // Enter fullscreen
-        // Save current window state
-        auto& state = mSavedWindowState.emplace();
-        state.fullscreen = true;
-        state.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
-        GetWindowPlacement(mainWindow, &state.wp);
-        
-        Utility::EnterFullscreen(mainWindow, mSavedWindowState.value());
-        
-        // Mark fullscreen state in persistent storage
-        OpenHacksVars::SavedWindowState.get_value().FromWindowState(state);
+        ShowWindow(mainWindow, SW_RESTORE);
+    }
+    else if (mSavedWindowState.has_value())
+    {
+        Utility::Restore(mainWindow, mSavedWindowState.value());
+        mSavedWindowState.reset();
+        // Clear persistent storage
+        OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
     }
     else
     {
-        // Exit fullscreen
-        if (mSavedWindowState.has_value())
-        {
-            Utility::ExitFullscreen(mainWindow, mSavedWindowState.value());
-            mSavedWindowState.reset();
-            
-            // Clear fullscreen state in persistent storage
-            OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
-        }
-        else
-        {
-            const auto newStyle = static_cast<WindowFrameStyle>((int32_t)OpenHacksVars::MainWindowFrameStyle);
-            ApplyMainWindowFrameStyle(newStyle);
-
-            RECT rect = {};
-            GetWindowRect(mainWindow, &rect);
-            OffsetRect(&rect, 10, 10);
-            SetWindowPos(mainWindow, nullptr, rect.left, rect.top, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOZORDER);
-        }
+        // No saved state - use standard restore
+        ShowWindow(mainWindow, SW_RESTORE);
     }
+}
+
+bool OpenHacksCore::IsMaximized()
+{
+    return mSavedWindowState.has_value() || Utility::IsMaximized(core_api::get_main_window());
+}
+
+bool OpenHacksCore::IsMinimized()
+{
+    return Utility::IsMinimized(core_api::get_main_window());
+}
+
+void OpenHacksCore::EnterFullscreen()
+{
+    HWND mainWindow = core_api::get_main_window();
+    // Save current window state
+    auto& state = mSavedWindowState.emplace();
+    state.fullscreen = true;
+    state.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
+    GetWindowPlacement(mainWindow, &state.wp);
+
+    Utility::EnterFullscreen(mainWindow, mSavedWindowState.value());
+
+    // Mark fullscreen state in persistent storage
+    OpenHacksVars::SavedWindowState.get_value().FromWindowState(state);
+}
+
+void OpenHacksCore::ExitFullscreen()
+{
+    HWND mainWindow = core_api::get_main_window();
+    // Exit fullscreen
+    if (mSavedWindowState.has_value())
+    {
+        Utility::ExitFullscreen(mainWindow, mSavedWindowState.value());
+        mSavedWindowState.reset();
+
+        // Clear fullscreen state in persistent storage
+        OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
+    }
+    else
+    {
+        const auto newStyle = static_cast<WindowFrameStyle>((int32_t)OpenHacksVars::MainWindowFrameStyle);
+        ApplyMainWindowFrameStyle(newStyle);
+
+        RECT rect = {};
+        GetWindowRect(mainWindow, &rect);
+        OffsetRect(&rect, 10, 10);
+        SetWindowPos(mainWindow, nullptr, rect.left, rect.top, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOZORDER);
+    }
+}
+
+void OpenHacksCore::ToggleFullscreen()
+{
+    HWND mainWindow = core_api::get_main_window();
+    if (!Utility::IsFullscreen(mainWindow))
+        EnterFullscreen();
+    else
+        ExitFullscreen();
 }
