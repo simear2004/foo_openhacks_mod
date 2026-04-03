@@ -32,21 +32,12 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Setup vcpkg (x86)
+      - name: Setup vcpkg
         uses: johnwason/vcpkg-action@v7
         with:
-          pkgs: minhook
-          triplet: x86-windows-static-md
+          pkgs: minhook:x86-windows-static-md,minhook:x64-windows-static-md
           token: ${{ secrets.GITHUB_TOKEN }}
-          revision: ${{ hashFiles('vcpkg.json') }}
-
-      - name: Setup vcpkg (x64)
-        uses: johnwason/vcpkg-action@v7
-        with:
-          pkgs: minhook
-          triplet: x64-windows-static-md
-          token: ${{ secrets.GITHUB_TOKEN }}
-          revision: ${{ hashFiles('vcpkg.json') }}
+          revision: b5d1a94fb7f88fd835e360fd23a45a09ceedbf48
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v3
