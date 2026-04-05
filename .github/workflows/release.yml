@@ -35,7 +35,8 @@ jobs:
       - name: Setup vcpkg
         uses: johnwason/vcpkg-action@v7
         with:
-          pkgs: minhook:x86-windows-static-md,minhook:x64-windows-static-md
+          manifest-dir: .
+          triplet: x86-windows-static-md,x64-windows-static-md
           token: ${{ secrets.GITHUB_TOKEN }}
           revision: b5d1a94fb7f88fd835e360fd23a45a09ceedbf48
 
