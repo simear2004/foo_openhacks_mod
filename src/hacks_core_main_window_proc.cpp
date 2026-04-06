@@ -123,6 +123,11 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
             return 1;
         break;
 
+    case WM_ERASEBKGND:
+        if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
+            return 1;
+        break;
+
     case WM_NCACTIVATE:
         if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
             return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, -1);
