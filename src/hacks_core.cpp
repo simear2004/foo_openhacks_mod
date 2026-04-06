@@ -89,11 +89,19 @@ bool OpenHacksCore::IsMainOrChildWindow(HWND wnd)
 
 POINT OpenHacksCore::GetBorderMetrics()
 {
-    // const int32_t cx = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI) + Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
-    // const int32_t cy = Utility::GetSystemMetricsForDpi(SM_CYFRAME, OpenHacksVars::DPI) + Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
-    const int32_t cx = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI);
-    const int32_t cy = Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
-    console::formatter() << "border metrics: cx=" << cx << ", cy=" << cy;
+    const int32_t cxFrame = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI);
+    const int32_t cyFrame = Utility::GetSystemMetricsForDpi(SM_CYFRAME, OpenHacksVars::DPI);
+    const int32_t cxPadded = Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
+    const int32_t cx = cxFrame + cxPadded;
+    const int32_t cy = cyFrame + cxPadded; // SM_CXPADDEDBORDER 同时用于 X 和 Y
+    
+    console::formatter() << "Border Metrics - SM_CXFRAME=" << cxFrame 
+                         << ", SM_CYFRAME=" << cyFrame 
+                         << ", SM_CXPADDEDBORDER=" << cxPadded
+                         << ", Total cx=" << cx 
+                         << ", Total cy=" << cy
+                         << ", DPI=" << OpenHacksVars::DPI;
+    
     return POINT{cx, cy};
 }
 
