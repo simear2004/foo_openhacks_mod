@@ -36,6 +36,7 @@ RECT& ClientToScreen(HWND wnd, RECT& rc);
 RECT& ScreenToClient(HWND wnd, RECT& rc);
 
 bool IsCompositionEnabled();
+bool IsWindows11OrGreater();
 bool EnableWindowShadow(HWND window, bool enable);
 uint32_t GetDPI(HWND window);
 int32_t GetSystemMetricsForDpi(int32_t index, uint32_t dpi);

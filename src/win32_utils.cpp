@@ -54,8 +54,34 @@ bool IsCompositionEnabled()
     return SUCCEEDED(DwmIsCompositionEnabled(&composition_enabled)) && composition_enabled;
 }
 
+bool IsWindows11OrGreater()
+{
+    // Use RtlGetVersion to get the real Windows version
+    HMODULE hNtDll = GetModuleHandleW(L"ntdll.dll");
+    if (!hNtDll)
+        return false;
+
+    typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+    auto pRtlGetVersion = reinterpret_cast<RtlGetVersionPtr>(GetProcAddress(hNtDll, "RtlGetVersion"));
+    if (!pRtlGetVersion)
+        return false;
+
+    RTL_OSVERSIONINFOW osvi = { sizeof(osvi) };
+    if (pRtlGetVersion(&osvi) != 0)
+        return false;
+
+    // Windows 11 is version 10.0.22000 or higher
+    return osvi.dwMajorVersion > 10 ||
+           (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion > 0) ||
+           (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber >= 22000);
+}
+
 bool EnableWindowShadow(HWND window, bool enable)
 {
+    // Only apply shadow on Windows 11 or later
+    if (!IsWindows11OrGreater())
+        return false;
+
     if (IsCompositionEnabled())
     {
         static const MARGINS shadow_state[2]{{0, 0, 0, 0}, {1, 1, 1, 1}};
