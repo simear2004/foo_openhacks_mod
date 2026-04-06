@@ -92,11 +92,17 @@ bool EnableWindowShadow(HWND window, bool enable)
         return SUCCEEDED(hr);
     }
     else
-    { 
+    {
+        if (IsWindows11OrGreater() == false)
+        {
+            const BOOL ncrEnabled = FALSE;
+            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_ENABLED, &ncrEnabled, sizeof(ncrEnabled));
+        }
+        
         static const MARGINS noMargins = {0, 0, 0, 0};
         HRESULT hr = DwmExtendFrameIntoClientArea(window, &noMargins);
         
-        const DWORD policy = DWMNCRP_ENABLED;
+        const DWORD policy = DWMNCRP_DISABLED;
         DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
         
         if (IsWindows11OrGreater() == false)
