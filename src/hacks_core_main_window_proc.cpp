@@ -41,6 +41,18 @@ bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
 
 LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
 {
+    GUITHREADINFO threadInfo = {};
+    threadInfo.cbSize = sizeof(threadInfo);
+    bool isInMoveSize = false;
+    
+    if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
+    {
+        isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
+    }
+    
+    if (!isInMoveSize && mIsLeftButtonDown)
+        return HTCLIENT;
+    
     const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
     const POINT border = GetBorderMetrics();
     RECT rect = {};
@@ -106,6 +118,24 @@ bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
     return false;
 }
 
+bool OpenHacksCore::OnLButtonDown(HWND wnd, WPARAM wp, LPARAM lp)
+{
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
+    {
+        mIsLeftButtonDown = true;
+    }
+    return false;
+}
+
+bool OpenHacksCore::OnLButtonUp(HWND wnd, WPARAM wp, LPARAM lp)
+{
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
+    {
+        mIsLeftButtonDown = false;
+    }
+    return false;
+}
+
 LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg)
@@ -130,6 +160,16 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
 
     case WM_SIZE:
         if (OnSize(wnd, wp, lp))
+            return 0;
+        break;
+
+    case WM_LBUTTONDOWN:
+        if (OnLButtonDown(wnd, wp, lp))
+            return 0;
+        break;
+
+    case WM_LBUTTONUP:
+        if (OnLButtonUp(wnd, wp, lp))
             return 0;
         break;
 
