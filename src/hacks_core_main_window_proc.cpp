@@ -87,29 +87,24 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
     
     if (hittest == HTCLIENT) return false;
 
-    GUITHREADINFO threadInfo = {};
-    threadInfo.cbSize = sizeof(threadInfo);
-    GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo);
+    HCURSOR cursor = nullptr;
     
-    bool isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
+    if (hittest == HTTOP || hittest == HTBOTTOM)
+        cursor = LoadCursor(nullptr, IDC_SIZENS);
+    else if (hittest == HTLEFT || hittest == HTRIGHT)
+        cursor = LoadCursor(nullptr, IDC_SIZEWE);
+    else if (hittest == HTTOPLEFT || hittest == HTBOTTOMRIGHT)
+        cursor = LoadCursor(nullptr, IDC_SIZENWSE);
+    else if (hittest == HTTOPRIGHT || hittest == HTBOTTOMLEFT)
+        cursor = LoadCursor(nullptr, IDC_SIZENESW);
     
-    if (isInMoveSize)
+    if (cursor != nullptr)
     {
-        return false;
+        SetCursor(cursor);
+        return true;
     }
 
-    if (hittest == HTTOP || hittest == HTBOTTOM)
-        SetCursor(LoadCursor(nullptr, IDC_SIZENS));
-    else if (hittest == HTLEFT || hittest == HTRIGHT)
-        SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
-    else if (hittest == HTTOPLEFT || hittest == HTBOTTOMRIGHT)
-        SetCursor(LoadCursor(nullptr, IDC_SIZENWSE));
-    else if (hittest == HTTOPRIGHT || hittest == HTBOTTOMLEFT)
-        SetCursor(LoadCursor(nullptr, IDC_SIZENESW));
-    else
-        return false;
-
-    return true;
+    return false;
 }
 
 bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
