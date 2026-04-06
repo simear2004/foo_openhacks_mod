@@ -183,6 +183,12 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
         const DWORD messagePos = GetMessagePos();
         const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
 
+        HWND hWndUnderCursor = WindowFromPoint(pt);
+        if (hWndUnderCursor == nullptr || hWndUnderCursor != mMainWindow)
+        {
+            return;
+        }
+
         // simulate move
         const auto& pseudoCaption = OpenHacksVars::PseudoCaptionSettings.get_value();
         Rect rectPseudoCaption = pseudoCaption.ToRect(mMainWindow);
