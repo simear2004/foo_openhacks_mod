@@ -41,25 +41,6 @@ bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
 
 LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
 {
-    // 检查是否已经进入 move/size 模式
-    GUITHREADINFO threadInfo = {};
-    threadInfo.cbSize = sizeof(threadInfo);
-    bool isInMoveSize = false;
-    
-    if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
-    {
-        isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
-    }
-    
-    // 如果已经在 move/size 模式，允许继续 sizing
-    if (!isInMoveSize)
-    {
-        // 不在 move/size 模式时，检查鼠标左键是否物理按下
-        // 如果左键按下，说明用户可能在拖动其他控件（如滚动条），禁止进入 sizing
-        if (GetKeyState(VK_LBUTTON) & 0x8000)
-            return HTCLIENT;
-    }
-    
     const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
     const POINT border = GetBorderMetrics();
     RECT rect = {};
@@ -103,8 +84,22 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
         return false;
 
     const int32_t hittest = (int32_t)LOWORD(lp);
-    if (hittest == HTCLIENT)
-        return false;
+    
+    if (hittest == HTCLIENT) return false;
+
+    if ((GetKeyState(VK_LBUTTON) & 0x8000))
+    {
+        GUITHREADINFO threadInfo = {};
+        threadInfo.cbSize = sizeof(threadInfo);
+        if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
+        {
+            if ((threadInfo.flags & GUI_INMOVESIZE) == 0)
+            {
+                SetCursor(LoadCursor(nullptr, IDC_ARROW));
+                return true;
+            }
+        }
+    }
 
     if (hittest == HTTOP || hittest == HTBOTTOM)
         SetCursor(LoadCursor(nullptr, IDC_SIZENS));
@@ -152,7 +147,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
             return 0;
         break;
 
-    case WM_DPICHANGED: // fixme: won't receive currently(DPI System aware).
+    case WM_DPICHANGED:
         OpenHacksVars::DPI = static_cast<uint32_t>(LOWORD(wp));
         break;
 
