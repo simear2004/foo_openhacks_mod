@@ -76,8 +76,6 @@ bool IsWindows11OrGreater()
            (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber >= 22000);
 }
 
-// ... existing code ...
-
 bool EnableWindowShadow(HWND window, bool enable)
 {
     if (!IsCompositionEnabled())
