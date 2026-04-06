@@ -200,7 +200,10 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
             const Rect rectForNonSizeing = GetRectForNonSizing();
             if (!rectForNonSizeing.IsPointIn(pt))
             {
-                if (threadInfo.flags & (GUI_INMOVESIZE))
+                // 检查是否已经在 move/size 模式
+                bool isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
+                
+                if (isInMoveSize)
                     return;
 
                 const int32_t hittest = (int32_t)SendMessage(mMainWindow, WM_NCHITTEST, 0, MAKELPARAM(pt.x, pt.y));
