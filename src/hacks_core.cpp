@@ -89,10 +89,19 @@ bool OpenHacksCore::IsMainOrChildWindow(HWND wnd)
 
 POINT OpenHacksCore::GetBorderMetrics()
 {
-    // const int32_t cx = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI) + Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
-    // const int32_t cy = Utility::GetSystemMetricsForDpi(SM_CYFRAME, OpenHacksVars::DPI) + Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
-    const int32_t cx = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI);
-    const int32_t cy = Utility::GetSystemMetricsForDpi(SM_CYFRAME, OpenHacksVars::DPI);
+    const int32_t cxFrame = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI);
+    const int32_t cyFrame = Utility::GetSystemMetricsForDpi(SM_CYFRAME, OpenHacksVars::DPI);
+    const int32_t cxPadding = Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
+    
+    int32_t cx = cxFrame;
+    int32_t cy = cyFrame;
+
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoCaption)
+    {
+        cx = cxFrame + cxPadding;
+        cy = cyFrame + cxPadding;
+    }
+
     return POINT{cx, cy};
 }
 
