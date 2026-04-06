@@ -47,11 +47,11 @@ void OpenHacksCore::Initialize()
         }
         else
         {
-            auto newStyle = static_cast<WindowFrameStyle>((int32_t)OpenHacksVars::MainWindowFrameStyle);
-            if (mSavedWindowState.has_value() && (newStyle == WindowFrameStyleNoCaption))
-                newStyle = WindowFrameStyleNoBorder;
-
-            ApplyMainWindowFrameStyle(newStyle);
+            if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
+            {
+                const bool isMaximized = Utility::IsMaximized(window) || mSavedWindowState.has_value();
+                Utility::EnableWindowShadow(window, !isMaximized);
+            }
         }
 
         if (HWND rebarWindow = FindWindowExW(window, nullptr, kDUIRebarWindowClassName.data(), nullptr))
