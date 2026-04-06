@@ -83,6 +83,9 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
     if (OpenHacksVars::MainWindowFrameStyle != WindowFrameStyleNoBorder)
         return false;
 
+    if (wnd != mMainWindow)
+        return false;
+
     const int32_t hittest = (int32_t)LOWORD(lp);
     if (hittest == HTCLIENT)
         return false;
