@@ -183,8 +183,7 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
         const DWORD messagePos = GetMessagePos();
         const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
 
-        HWND hWndUnderCursor = WindowFromPoint(pt);
-        if (hWndUnderCursor == nullptr || hWndUnderCursor != mMainWindow)
+        if (msg->hwnd != mMainWindow)
         {
             return;
         }
