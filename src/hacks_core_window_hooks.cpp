@@ -141,13 +141,11 @@ void OpenHacksCore::OnHookMouseMove(LPMSG msg)
     threadInfo.cbSize = sizeof(threadInfo);
     if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
     {
+        if (threadInfo.hwndCapture != nullptr && threadInfo.hwndCapture != mMainWindow)
+            return;
+
         if (threadInfo.flags & (GUI_INMENUMODE | GUI_INMOVESIZE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE))
             return;
-        
-        if (threadInfo.hwndCapture != nullptr && threadInfo.hwndCapture != mMainWindow)
-        {
-            return;
-        }
 
         const DWORD messagePos = GetMessagePos();
         const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
@@ -204,9 +202,8 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
             const Rect rectForNonSizeing = GetRectForNonSizing();
             if (!rectForNonSizeing.IsPointIn(pt))
             {
-                bool isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
-                
-                if (isInMoveSize) return;
+                if (threadInfo.flags & (GUI_INMOVESIZE))
+                    return;
                 
                 const int32_t hittest = (int32_t)SendMessage(mMainWindow, WM_NCHITTEST, 0, MAKELPARAM(pt.x, pt.y));
                 if (hittest != HTCLIENT)
