@@ -84,27 +84,21 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
         return false;
 
     const int32_t hittest = (int32_t)LOWORD(lp);
-    
-    if (hittest == HTCLIENT) return false;
+    if (hittest == HTCLIENT)
+        return false;
 
-    HCURSOR cursor = nullptr;
-    
     if (hittest == HTTOP || hittest == HTBOTTOM)
-        cursor = LoadCursor(nullptr, IDC_SIZENS);
+        SetCursor(LoadCursor(nullptr, IDC_SIZENS));
     else if (hittest == HTLEFT || hittest == HTRIGHT)
-        cursor = LoadCursor(nullptr, IDC_SIZEWE);
+        SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
     else if (hittest == HTTOPLEFT || hittest == HTBOTTOMRIGHT)
-        cursor = LoadCursor(nullptr, IDC_SIZENWSE);
+        SetCursor(LoadCursor(nullptr, IDC_SIZENWSE));
     else if (hittest == HTTOPRIGHT || hittest == HTBOTTOMLEFT)
-        cursor = LoadCursor(nullptr, IDC_SIZENESW);
-    
-    if (cursor != nullptr)
-    {
-        SetCursor(cursor);
-        return true;
-    }
+        SetCursor(LoadCursor(nullptr, IDC_SIZENESW));
+    else
+        return false;
 
-    return false;
+    return true;
 }
 
 bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
