@@ -41,6 +41,7 @@ bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
 
 LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
 {
+    // 检查是否已经进入 move/size 模式
     GUITHREADINFO threadInfo = {};
     threadInfo.cbSize = sizeof(threadInfo);
     bool isInMoveSize = false;
@@ -50,8 +51,14 @@ LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
         isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
     }
     
-    if (!isInMoveSize && mIsLeftButtonDown)
-        return HTCLIENT;
+    // 如果已经在 move/size 模式，允许继续 sizing
+    if (!isInMoveSize)
+    {
+        // 不在 move/size 模式时，检查鼠标左键是否物理按下
+        // 如果左键按下，说明用户可能在拖动其他控件（如滚动条），禁止进入 sizing
+        if (GetKeyState(VK_LBUTTON) & 0x8000)
+            return HTCLIENT;
+    }
     
     const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
     const POINT border = GetBorderMetrics();
@@ -118,24 +125,6 @@ bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
     return false;
 }
 
-bool OpenHacksCore::OnLButtonDown(HWND wnd, WPARAM wp, LPARAM lp)
-{
-    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
-    {
-        mIsLeftButtonDown = true;
-    }
-    return false;
-}
-
-bool OpenHacksCore::OnLButtonUp(HWND wnd, WPARAM wp, LPARAM lp)
-{
-    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
-    {
-        mIsLeftButtonDown = false;
-    }
-    return false;
-}
-
 LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg)
@@ -160,16 +149,6 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
 
     case WM_SIZE:
         if (OnSize(wnd, wp, lp))
-            return 0;
-        break;
-
-    case WM_LBUTTONDOWN:
-        if (OnLButtonDown(wnd, wp, lp))
-            return 0;
-        break;
-
-    case WM_LBUTTONUP:
-        if (OnLButtonUp(wnd, wp, lp))
             return 0;
         break;
 
