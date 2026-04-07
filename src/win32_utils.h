@@ -52,9 +52,4 @@ void ApplyWindowFrameStyle(HWND wnd, WindowFrameStyle style);
 void EnterFullscreen(HWND wnd, WindowState& state);
 void ExitFullscreen(HWND wnd, WindowState& state);
 bool IsFullscreen(HWND wnd);
-
-// Shadow window management for Windows 10
-void UpdateShadowWindowPosition(HWND mainWindow);
-void DestroyShadowWindow(HWND mainWindow);
-
 } // namespace Utility
