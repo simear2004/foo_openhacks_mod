@@ -128,6 +128,17 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
             return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, -1);
         break;
 
+    case WM_NCCALCSIZE:
+        if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder && wp == TRUE)
+        {
+            // When using negative margins (-1), we need to preserve the client area
+            // by returning WVR_REDRAW to force proper redrawing
+            NCCALCSIZE_PARAMS* params = reinterpret_cast<NCCALCSIZE_PARAMS*>(lp);
+            params->rgrc[0] = params->rgrc[1];
+            return WVR_REDRAW;
+        }
+        break;
+
     case WM_SIZE:
         if (OnSize(wnd, wp, lp))
             return 0;
