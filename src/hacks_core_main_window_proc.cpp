@@ -133,7 +133,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
             return 0;
         break;
 
-    case WM_DPICHANGED:
+    case WM_DPICHANGED: // fixme: won't receive currently(DPI System aware).
         OpenHacksVars::DPI = static_cast<uint32_t>(LOWORD(wp));
         break;
 
