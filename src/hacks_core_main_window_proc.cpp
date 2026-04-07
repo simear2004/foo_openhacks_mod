@@ -132,7 +132,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
         if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder ||
             OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoCaption)
         {
-            return 0;
+            return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, -1);
         }
         break;
 
