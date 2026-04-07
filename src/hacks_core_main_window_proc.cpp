@@ -110,6 +110,15 @@ bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
     return false;
 }
 
+bool OpenHacksCore::OnMove(HWND wnd, WPARAM wp, LPARAM lp)
+{
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
+    {
+        Utility::UpdateShadowWindowPosition(wnd);
+    }
+    return false;
+}
+
 LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg)
@@ -132,12 +141,17 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
             return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, -1);
         break;
 
+    case WM_MOVE:
+        if (OnMove(wnd, wp, lp))
+            return 0;
+        break;
+
     case WM_SIZE:
         if (OnSize(wnd, wp, lp))
             return 0;
         break;
 
-    case WM_DPICHANGED: // fixme: won't receive currently(DPI System aware).
+    case WM_DPICHANGED:
         OpenHacksVars::DPI = static_cast<uint32_t>(LOWORD(wp));
         break;
 
