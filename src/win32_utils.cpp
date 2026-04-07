@@ -76,6 +76,24 @@ bool IsWindows11OrGreater()
            (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber >= 22000);
 }
 
+// bool EnableWindowShadow(HWND window, bool enable)
+// {
+//     // Only apply shadow on Windows 11 or later
+//     if (!IsWindows11OrGreater())
+//         return false;
+
+//     if (IsCompositionEnabled())
+//     {
+//         static const MARGINS shadow_state[2]{{0, 0, 0, 0}, {1, 1, 1, 1}};
+//         const bool result = SUCCEEDED(DwmExtendFrameIntoClientArea(window, &shadow_state[enable ? 1 : 0]));
+//         const DWORD policy = DWMNCRP_ENABLED;
+//         std::ignore = DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+//         return result;
+//     }
+
+//     return false;
+// }
+
 bool EnableWindowShadow(HWND window, bool enable)
 {
     if (!IsCompositionEnabled())
@@ -92,27 +110,36 @@ bool EnableWindowShadow(HWND window, bool enable)
     }
     else
     {
-        // Windows 10: Enable shadow and remove 1px border
+        // Windows 10: Handle shadow and border separately
+        
         if (enable)
         {
-            // Enable shadow by extending frame into client area
+            // Enable shadow while removing 1px border
+            
+            // Step 1: Set non-client rendering policy to disabled to prevent border drawing
+            const DWORD policy = DWMNCRP_DISABLED;
+            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            
+            // Step 2: Extend frame with 1px margins to create shadow without border
+            // Using 1px margins creates the shadow effect
             static const MARGINS shadowMargins = {1, 1, 1, 1};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
             
-            // Set non-client rendering policy to enabled
-            const DWORD policy = DWMNCRP_ENABLED;
-            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            // Step 3: Force window to recalculate non-client area
+            if (SUCCEEDED(hr))
+            {
+                SetWindowPos(window, nullptr, 0, 0, 0, 0, 
+                    SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            }
             
             return SUCCEEDED(hr);
         }
         else
         {
-            // Disable shadow and remove 1px border
-            // Set non-client rendering policy to use window style
+            // Disable shadow completely
             const DWORD policy = DWMNCRP_USEWINDOWSTYLE;
             DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
             
-            // Extend frame with zero margins to remove border
             static const MARGINS zeroMargins = {0, 0, 0, 0};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &zeroMargins);
             
@@ -120,7 +147,6 @@ bool EnableWindowShadow(HWND window, bool enable)
         }
     }
 }
-
 uint32_t GetDPI(HWND window)
 {
     LoadUtilityProc();
@@ -323,6 +349,13 @@ void ApplyWindowFrameStyle(HWND wnd, WindowFrameStyle style)
         return;
 
     SetWindowLongPtr(wnd, GWL_STYLE, newStyle);
+
+    // Always enable shadow for all custom frame styles on Windows 10/11
+    // The shadow is handled by EnableWindowShadow which also removes the 1px border
+    if (style != WindowFrameStyleDefault)
+    {
+        EnableWindowShadow(wnd, true);
+    }
 
     // Notify frame changes
     SetWindowPos(wnd, HWND_TOP, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
