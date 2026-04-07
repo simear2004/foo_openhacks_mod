@@ -110,7 +110,7 @@ bool EnableWindowShadow(HWND window, bool enable)
         DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
         
         // 负边距是关键
-        static const MARGINS shadowMargins = {-1, -1, -1, -1};
+        static const MARGINS shadowMargins = {1, 1, 1, 1};
         HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
         
         SetWindowPos(window, nullptr, 0, 0, 0, 0, 
