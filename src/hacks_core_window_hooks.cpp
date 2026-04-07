@@ -123,6 +123,7 @@ LRESULT OpenHacksCore::OpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp)
             case WM_LBUTTONDOWN:
                 OnHookLButtonDown(msg);
                 break;
+
             default:
                 break;
             }
@@ -204,7 +205,7 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
             {
                 if (threadInfo.flags & (GUI_INMOVESIZE))
                     return;
-                
+
                 const int32_t hittest = (int32_t)SendMessage(mMainWindow, WM_NCHITTEST, 0, MAKELPARAM(pt.x, pt.y));
                 if (hittest != HTCLIENT)
                 {
