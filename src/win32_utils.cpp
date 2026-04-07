@@ -99,37 +99,54 @@ bool EnableWindowShadow(HWND window, bool enable)
     if (!IsCompositionEnabled())
         return false;
 
-    if (enable)
+    if (IsWindows11OrGreater())
     {
-        LONG_PTR style = GetWindowLongPtr(window, GWL_STYLE);
-        style |= WS_THICKFRAME;
-        style &= ~WS_BORDER;
-        SetWindowLongPtr(window, GWL_STYLE, style);
-        
+        // Windows 11: Use standard DWM shadow
+        static const MARGINS shadow_state[2]{{0, 0, 0, 0}, {1, 1, 1, 1}};
+        const bool result = SUCCEEDED(DwmExtendFrameIntoClientArea(window, &shadow_state[enable ? 1 : 0]));
         const DWORD policy = DWMNCRP_ENABLED;
-        DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
-        
-        // 负边距是关键
-        static const MARGINS shadowMargins = {1, 1, 1, 1};
-        HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
-        
-        SetWindowPos(window, nullptr, 0, 0, 0, 0, 
-            SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-        
-        return SUCCEEDED(hr);
+        std::ignore = DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+        return result;
     }
     else
     {
-        const DWORD policy = DWMNCRP_USEWINDOWSTYLE;
-        DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+        // Windows 10: Handle shadow and border separately
         
-        static const MARGINS zeroMargins = {0, 0, 0, 0};
-        HRESULT hr = DwmExtendFrameIntoClientArea(window, &zeroMargins);
-        
-        return SUCCEEDED(hr);
+        if (enable)
+        {
+            // Enable shadow while removing 1px border
+            
+            // Step 1: Set non-client rendering policy to disabled to prevent border drawing
+            const DWORD policy = DWMNCRP_DISABLED;
+            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            
+            // Step 2: Extend frame with 1px margins to create shadow without border
+            // Using 1px margins creates the shadow effect
+            static const MARGINS shadowMargins = {1, 1, 1, 1};
+            HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
+            
+            // Step 3: Force window to recalculate non-client area
+            if (SUCCEEDED(hr))
+            {
+                SetWindowPos(window, nullptr, 0, 0, 0, 0, 
+                    SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            }
+            
+            return SUCCEEDED(hr);
+        }
+        else
+        {
+            // Disable shadow completely
+            const DWORD policy = DWMNCRP_USEWINDOWSTYLE;
+            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            
+            static const MARGINS zeroMargins = {0, 0, 0, 0};
+            HRESULT hr = DwmExtendFrameIntoClientArea(window, &zeroMargins);
+            
+            return SUCCEEDED(hr);
+        }
     }
 }
-
 uint32_t GetDPI(HWND window)
 {
     LoadUtilityProc();
@@ -321,9 +338,7 @@ void ApplyWindowFrameStyle(HWND wnd, WindowFrameStyle style)
         break;
 
     case WindowFrameStyleNoBorder:
-        newStyle |= WS_THICKFRAME;
-        newStyle &= ~(WS_CAPTION);
-        newStyle &= ~WS_BORDER;
+        newStyle &= ~(WS_CAPTION | WS_THICKFRAME);
         break;
 
     default:
