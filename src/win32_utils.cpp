@@ -15,23 +15,6 @@ DPI_AWARENESS(WINAPI* pfnGetAwarenessFromDpiAwarenessContext)(DPI_AWARENESS_CONT
 
 static std::once_flag staticLoadFlag;
 
-static COLORREF GetFoobarBackgroundColor()
-{
-    try
-    {
-        auto config = ui_config_manager::tryGet();
-        if (config.is_valid())
-        {
-            return config->get_color(ui_color_background);
-        }
-    }
-    catch (...)
-    {
-    }
-
-    return GetSysColor(COLOR_WINDOW);
-}
-
 static void LoadUtilityProc()
 {
     // clang-format off
@@ -47,6 +30,23 @@ static void LoadUtilityProc()
         }
     });
     // clang-format on
+}
+
+COLORREF GetFoobarBackgroundColor()
+{
+    try
+    {
+        auto config = ui_config_manager::tryGet();
+        if (config.is_valid())
+        {
+            return config->get_color(ui_color_background);
+        }
+    }
+    catch (...)
+    {
+    }
+
+    return GetSysColor(COLOR_WINDOW);
 }
 
 RECT& ClientToScreen(HWND wnd, RECT& rc)
@@ -128,15 +128,16 @@ bool EnableWindowShadow(HWND window, bool enable)
     {
         if (enable)
         {
-            // Windows 10: Set border color to match foobar2000's actual background color
+            // Windows 10: Set border color to transparent using ARGB format
             
-            // Get the actual background color from foobar2000 SDK
-            COLORREF bgColor = GetFoobarBackgroundColor();
+            // Use ARGB format with Alpha = 0 (fully transparent)
+            // Format: 0xAARRGGBB where AA is alpha channel
+            // 0x00000000 = fully transparent black
+            DWORD transparentColor = 0x00000000;
             
-            // Set border and caption colors to match the background
-            // This makes the border invisible regardless of light/dark mode or custom themes
-            DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &bgColor, sizeof(bgColor));
-            DwmSetWindowAttribute(window, DWMWA_CAPTION_COLOR, &bgColor, sizeof(bgColor));
+            // Set border and caption colors to transparent
+            DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &transparentColor, sizeof(transparentColor));
+            DwmSetWindowAttribute(window, DWMWA_CAPTION_COLOR, &transparentColor, sizeof(transparentColor));
             
             // Extend frame into client area to create shadow
             static const MARGINS shadowMargins = {1, 1, 1, 1};
