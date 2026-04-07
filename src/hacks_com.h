@@ -1,82 +1,117 @@
 #pragma once
-#include <oaidl.h>
+#include <optional>
+#include "win32_utils.h"
 
-// warning C4467: usage of ATL attributes is deprecated
-#pragma warning(disable:4467)
-
-#ifdef __INTELLISENSE__
-#define COM_PROPGET(name, ...) \
-        STDMETHOD(get_##name)(__VA_ARGS__)
-#define COM_PROPPUT(name, ...) \
-        STDMETHOD(put_##name)(__VA_ARGS__)
-#else
-#define COM_PROPGET(name, ...) \
-        [propget] STDMETHOD(name)(__VA_ARGS__)
-#define COM_PROPPUT(name, ...) \
-        [propput] STDMETHOD(name)(__VA_ARGS__)
-#endif
-
-[module(name = "foo_openhacks")];
-
-[
-    object,
-    dual,
-    pointer_default(unique),
-    uuid("5faf8474-cde1-4fd4-8151-6ced18b7039b")
-]
-__interface IOpenHacks : IDispatch
+enum HacksInitErrors : uint32_t
 {
-    // Properties
-    COM_PROPGET(DPI, [out, retval] LONG* pValue);
+    NoError = 0,
+    HooksInstallError = 1 << 0,
+    IncompatibleComponentInstalled = 1 << 1,
+};
 
-    COM_PROPGET(MenuBarVisible, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(MenuBarVisible, [in] VARIANT_BOOL value);
+class OpenHacksCore
+{
+public:
+    static OpenHacksCore& Get();
 
-    COM_PROPGET(StatusBarVisible, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(StatusBarVisible, [in] VARIANT_BOOL value);
+    FORCEINLINE bool HasInitError() const
+    {
+        return mInitErrors != HacksInitErrors::NoError;
+    }
 
-    COM_PROPGET(Fullscreen, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(Fullscreen, [in] VARIANT_BOOL value);
+    void Initialize();
+    void Finalize();
 
-    COM_PROPGET(WindowState, [out, retval] LONG* pValue);
-    COM_PROPPUT(WindowState, [in] LONG value);
+    bool InstallWindowHooks();
 
-    COM_PROPGET(WindowFrameStyle, [out, retval] LONG* pValue);
-    COM_PROPPUT(WindowFrameStyle, [in] LONG value);
+    void ToggleStatusBar();
+    void ToggleMenuBar();
 
-    // PseudoCaptionSettings Properties
-    COM_PROPGET(PseudoCaptionLeft, [out, retval] LONG* pValue);
-    COM_PROPPUT(PseudoCaptionLeft, [in] LONG value);
+    void ShowOrHideStatusBar(bool value);
+    bool ShowOrHideMenuBar(bool value);
 
-    COM_PROPGET(PseudoCaptionTop, [out, retval] LONG* pValue);
-    COM_PROPPUT(PseudoCaptionTop, [in] LONG value);
+    bool CheckIncompatibleComponents();
 
-    COM_PROPGET(PseudoCaptionRight, [out, retval] LONG* pValue);
-    COM_PROPPUT(PseudoCaptionRight, [in] LONG value);
+    void ApplyMainWindowFrameStyle(WindowFrameStyle newStyle);
 
-    COM_PROPGET(PseudoCaptionBottom, [out, retval] LONG* pValue);
-    COM_PROPPUT(PseudoCaptionBottom, [in] LONG value);
+    void Maximize();
+    void Restore();
+    bool IsMaximized();
+    bool IsMinimized();
 
-    COM_PROPGET(PseudoCaptionWidth, [out, retval] LONG* pValue);
-    COM_PROPPUT(PseudoCaptionWidth, [in] LONG value);
+    // Fullscreen operations
+    void EnterFullscreen();
+    void ExitFullscreen();
+    void ToggleFullscreen();
 
-    COM_PROPGET(PseudoCaptionHeight, [out, retval] LONG* pValue);
-    COM_PROPPUT(PseudoCaptionHeight, [in] LONG value);
+private:
+    FORCEINLINE static LRESULT CALLBACK StaticOpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
+    {
+        return Get().OpenHacksMainWindowProc(wnd, msg, wp, lp);
+    }
 
-    COM_PROPGET(PseudoCaptionLeftEnabled, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(PseudoCaptionLeftEnabled, [in] VARIANT_BOOL value);
+    FORCEINLINE static LRESULT CALLBACK StaticOpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
+    {
+        return Get().OpenHacksCallWndProc(code, wp, lp);
+    }
 
-    COM_PROPGET(PseudoCaptionTopEnabled, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(PseudoCaptionTopEnabled, [in] VARIANT_BOOL value);
+    FORCEINLINE static LRESULT CALLBACK StaticOpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp)
+    {
+        return Get().OpenHacksGetMessageProc(code, wp, lp);
+    }
 
-    COM_PROPGET(PseudoCaptionRightEnabled, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(PseudoCaptionRightEnabled, [in] VARIANT_BOOL value);
+    FORCEINLINE static LRESULT CALLBACK StaticOpenHacksStatusBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
+    {
+        return Get().OpenHacksStatusBarProc(wnd, msg, wp, lp);
+    }
 
-    COM_PROPGET(PseudoCaptionBottomEnabled, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(PseudoCaptionBottomEnabled, [in] VARIANT_BOOL value);
+    FORCEINLINE static LRESULT CALLBACK StaticOpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
+    {
+        return Get().OpenHacksReBarProc(wnd, msg, wp, lp);
+    }
 
-    // Methods
-    STDMETHOD(ToggleMenuBar)();
-    STDMETHOD(ToggleStatusBar)();
-    STDMETHOD(ToggleFullscreen)();
+    FORCEINLINE bool IsMenuBarVisible() const
+    {
+        return mMainMenuWindow != nullptr && IsWindowVisible(mMainMenuWindow);
+    }
+
+    LRESULT OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp);
+    LRESULT OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp);
+    LRESULT OpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp);
+    LRESULT OpenHacksStatusBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp);
+    LRESULT OpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp);
+
+    void UninstallWindowHooks();
+    bool InstallWindowHooksInternal();
+
+    bool IsMainOrChildWindow(HWND wnd);
+    POINT GetBorderMetrics();
+    Rect GetRectForNonSizing();
+
+private:
+    // main window message handlers
+    bool OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp);
+    LRESULT OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp);
+    bool OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp);
+    bool OnSize(HWND wnd, WPARAM wp, LPARAM lp);
+    // windows hook handlers
+    void OnHookMouseMove(LPMSG msg);
+    void OnHookLButtonDown(LPMSG msg);
+
+private:
+    HWND mMainWindow = nullptr;
+    HWND mRebarWindow = nullptr;
+    HWND mMainMenuWindow = nullptr;
+    HWND mStatusBar = nullptr;
+    HHOOK mCallWndHook = nullptr;
+    HHOOK mGetMsgHook = nullptr;
+    WNDPROC mMainWindowOriginProc = nullptr;
+    WNDPROC mStatusBarOriginProc = nullptr;
+    WNDPROC mReBarOriginProc = nullptr;
+
+    uint32_t mInitErrors = HacksInitErrors::NoError;
+    DWORD mInstallHooksWin32Error = ERROR_SUCCESS;
+
+    std::optional<WindowState> mSavedWindowState;
+    bool mRequireRevertCursor = false;
 };
