@@ -122,7 +122,7 @@ bool EnableWindowShadow(HWND window, bool enable)
             DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
             
             // Step 2: Use larger margins for proper shadow visibility
-            static const MARGINS shadowMargins = {1, 1, 1, 1};
+            static const MARGINS shadowMargins = {-1, -1, -1, -1};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
             
             // Step 3: Set border color to transparent to eliminate the white border
