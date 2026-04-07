@@ -32,23 +32,6 @@ static void LoadUtilityProc()
     // clang-format on
 }
 
-COLORREF GetFoobarBackgroundColor()
-{
-    try
-    {
-        auto config = ui_config_manager::tryGet();
-        if (config.is_valid())
-        {
-            return config->get_color(ui_color_background);
-        }
-    }
-    catch (...)
-    {
-    }
-
-    return GetSysColor(COLOR_WINDOW);
-}
-
 RECT& ClientToScreen(HWND wnd, RECT& rc)
 {
     LPPOINT pt = (LPPOINT)&rc;
