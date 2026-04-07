@@ -15,6 +15,23 @@ DPI_AWARENESS(WINAPI* pfnGetAwarenessFromDpiAwarenessContext)(DPI_AWARENESS_CONT
 
 static std::once_flag staticLoadFlag;
 
+static COLORREF GetFoobarBackgroundColor()
+{
+    try
+    {
+        auto config = ui_config_manager::tryGet();
+        if (config.is_valid())
+        {
+            return config->get_color(ui_color_background);
+        }
+    }
+    catch (...)
+    {
+    }
+
+    return GetSysColor(COLOR_WINDOW);
+}
+
 static void LoadUtilityProc()
 {
     // clang-format off
@@ -109,23 +126,23 @@ bool EnableWindowShadow(HWND window, bool enable)
     }
     else
     {
-        // Windows 10: Handle active window border color
-        
         if (enable)
         {
-            // Step 1: Set border color to transparent/black to hide the active window border
-            // This removes the 1px accent color border that appears on active windows
-            COLORREF borderColor = RGB(0, 0, 0);
-            DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &borderColor, sizeof(borderColor));
+            // Windows 10: Set border color to match foobar2000's actual background color
             
-            // Step 2: Also set caption color to avoid any caption border
-            DwmSetWindowAttribute(window, DWMWA_CAPTION_COLOR, &borderColor, sizeof(borderColor));
+            // Get the actual background color from foobar2000 SDK
+            COLORREF bgColor = GetFoobarBackgroundColor();
             
-            // Step 3: Extend frame into client area to create shadow
+            // Set border and caption colors to match the background
+            // This makes the border invisible regardless of light/dark mode or custom themes
+            DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &bgColor, sizeof(bgColor));
+            DwmSetWindowAttribute(window, DWMWA_CAPTION_COLOR, &bgColor, sizeof(bgColor));
+            
+            // Extend frame into client area to create shadow
             static const MARGINS shadowMargins = {1, 1, 1, 1};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
             
-            // Step 4: Enable non-client rendering
+            // Enable non-client rendering
             const DWORD policy = DWMNCRP_ENABLED;
             DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
             
@@ -144,6 +161,7 @@ bool EnableWindowShadow(HWND window, bool enable)
         }
     }
 }
+
 uint32_t GetDPI(HWND window)
 {
     LoadUtilityProc();
