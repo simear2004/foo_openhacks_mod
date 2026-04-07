@@ -111,17 +111,18 @@ bool EnableWindowShadow(HWND window, bool enable)
     {
         if (enable)
         {
-            // Windows 10: Use negative margins to create "sheet of glass" effect
-            // This creates shadow without the 1px accent border
+            // Windows 10: Special technique to get shadow without border
             
-            // Negative margins (-1) tell DWM to extend frame across entire window
-            // This creates the "sheet of glass" effect with no visible border
+            // Step 1: Set non-client rendering policy to ENABLED
+            const DWORD policy = DWMNCRP_ENABLED;
+            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            
+            // Step 2: Use negative margins for "sheet of glass" effect
             static const MARGINS glassMargins = {-1, -1, -1, -1};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &glassMargins);
             
-            // Enable non-client rendering
-            const DWORD policy = DWMNCRP_ENABLED;
-            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            // Step 3: Force a redraw to apply changes
+            RedrawWindow(window, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
             
             return SUCCEEDED(hr);
         }
