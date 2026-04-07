@@ -142,6 +142,8 @@ bool EnableWindowShadow(HWND window, bool enable)
             {
                 SetWindowPos(window, nullptr, 0, 0, 0, 0, 
                     SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            }
+            
             return SUCCEEDED(hr);
         }
         else
