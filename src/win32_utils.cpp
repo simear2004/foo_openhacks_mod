@@ -15,6 +15,23 @@ DPI_AWARENESS(WINAPI* pfnGetAwarenessFromDpiAwarenessContext)(DPI_AWARENESS_CONT
 
 static std::once_flag staticLoadFlag;
 
+COLORREF GetFoobarBackgroundColor()
+{
+    try
+    {
+        auto config = ui_config_manager::tryGet();
+        if (config.is_valid())
+        {
+            return config->get_color(ui_color_background);
+        }
+    }
+    catch (...)
+    {
+    }
+
+    return GetSysColor(COLOR_WINDOW);
+}
+
 static void LoadUtilityProc()
 {
     // clang-format off
@@ -105,12 +122,14 @@ bool EnableWindowShadow(HWND window, bool enable)
         }
         else
         {
-            static const MARGINS negativeMargins = {-1, -1, -1, -1};
-            HRESULT hr = DwmExtendFrameIntoClientArea(window, &negativeMargins);
-            
             const DWORD policy = DWMNCRP_USEWINDOWSTYLE;
             DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
             
+            static const MARGINS zeroMargins = {0, 0, 0, 0};
+            HRESULT hr = DwmExtendFrameIntoClientArea(window, &zeroMargins);
+            
+            RedrawWindow(window, nullptr, nullptr, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
+
             return SUCCEEDED(hr);
         }
     }
