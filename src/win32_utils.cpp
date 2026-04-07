@@ -122,16 +122,24 @@ bool EnableWindowShadow(HWND window, bool enable)
             DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
             
             // Step 2: Use larger margins for proper shadow visibility
-            static const MARGINS shadowMargins = {5, 5, 5, 5};
+            static const MARGINS shadowMargins = {1, 1, 1, 1};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
             
-            // Step 3: The key trick: Set window style to remove the border
+            // Step 3: Set border color to transparent to eliminate the white border
+            DWORD borderColor = 0x00000000; // Transparent black
+            DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &borderColor, sizeof(borderColor));
+            
+            // Step 4: Set caption color to transparent as well
+            DWORD captionColor = 0x00000000; // Transparent black
+            DwmSetWindowAttribute(window, DWMWA_CAPTION_COLOR, &captionColor, sizeof(captionColor));
+            
+            // Step 5: The key trick: Set window style to remove the border
             // This is done at the window level, not DWM level
             LONG_PTR style = GetWindowLongPtr(window, GWL_STYLE);
             style &= ~(WS_BORDER | WS_THICKFRAME); // Remove border styles
             SetWindowLongPtr(window, GWL_STYLE, style);
             
-            // Step 4: Force window refresh to apply all changes
+            // Step 6: Force window refresh to apply all changes
             SetWindowPos(window, nullptr, 0, 0, 0, 0, 
                 SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
             
