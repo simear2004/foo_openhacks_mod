@@ -60,13 +60,15 @@ HWND CreateShadowWindow(HWND mainWindow)
     RECT parentRect;
     GetWindowRect(mainWindow, &parentRect);
 
+    // Increase offset to make shadow more visible
+    // Shadow window is slightly smaller and offset to show the shadow
     HWND shadowHwnd = CreateWindowExW(
         WS_EX_NOACTIVATE | WS_EX_COMPOSITED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
         className, L"",
         WS_THICKFRAME,
-        parentRect.left + 1, parentRect.top + 2,
-        parentRect.right - parentRect.left - 4, 
-        parentRect.bottom - parentRect.top - 4,
+        parentRect.left - 5, parentRect.top - 5,
+        parentRect.right - parentRect.left + 10, 
+        parentRect.bottom - parentRect.top + 10,
         nullptr, nullptr, GetModuleHandle(nullptr), nullptr
     );
 
@@ -81,13 +83,17 @@ HWND CreateShadowWindow(HWND mainWindow)
 
     SetClassLongPtr(shadowHwnd, GCLP_HBRBACKGROUND, (LONG_PTR)GetStockObject(HOLLOW_BRUSH));
 
-    static const MARGINS shadowMargins = {1, 1, 1, 1};
+    // Use larger margins for more visible shadow
+    static const MARGINS shadowMargins = {8, 8, 8, 8};
     DwmExtendFrameIntoClientArea(shadowHwnd, &shadowMargins);
 
     // Show shadow window behind the main window
     SetWindowPos(shadowHwnd, mainWindow, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     ShowWindow(shadowHwnd, SW_SHOW);
+
+    // Force activation state to ensure shadow is visible
+    PostMessage(shadowHwnd, WM_NCACTIVATE, TRUE, 0);
 
     return shadowHwnd;
 }
@@ -233,11 +239,11 @@ void UpdateShadowWindowPosition(HWND mainWindow)
         RECT parentRect;
         GetWindowRect(mainWindow, &parentRect);
 
-        // Use SWP_NOZORDER to maintain z-order relationship
+        // Update position with the same offset as creation
         SetWindowPos(shadowHwnd, mainWindow,
-            parentRect.left + 1, parentRect.top + 2,
-            parentRect.right - parentRect.left - 4, 
-            parentRect.bottom - parentRect.top - 4,
+            parentRect.left - 5, parentRect.top - 5,
+            parentRect.right - parentRect.left + 10, 
+            parentRect.bottom - parentRect.top + 10,
             SWP_NOACTIVATE | SWP_NOCOPYBITS | SWP_NOREDRAW | SWP_NOZORDER);
 
         DwmFlush();
