@@ -111,20 +111,13 @@ bool EnableWindowShadow(HWND window, bool enable)
     {
         if (enable)
         {
-            // Windows 10: Set border color to transparent using ARGB format
+            // Windows 10: Use negative margins to create "sheet of glass" effect
+            // This creates shadow without the 1px accent border
             
-            // Use ARGB format with Alpha = 0 (fully transparent)
-            // Format: 0xAARRGGBB where AA is alpha channel
-            // 0x00000000 = fully transparent black
-            DWORD transparentColor = 0x00000000;
-            
-            // Set border and caption colors to transparent
-            DwmSetWindowAttribute(window, DWMWA_BORDER_COLOR, &transparentColor, sizeof(transparentColor));
-            DwmSetWindowAttribute(window, DWMWA_CAPTION_COLOR, &transparentColor, sizeof(transparentColor));
-            
-            // Extend frame into client area to create shadow
-            static const MARGINS shadowMargins = {1, 1, 1, 1};
-            HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
+            // Negative margins (-1) tell DWM to extend frame across entire window
+            // This creates the "sheet of glass" effect with no visible border
+            static const MARGINS glassMargins = {-1, -1, -1, -1};
+            HRESULT hr = DwmExtendFrameIntoClientArea(window, &glassMargins);
             
             // Enable non-client rendering
             const DWORD policy = DWMNCRP_ENABLED;
