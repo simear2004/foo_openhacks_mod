@@ -110,27 +110,30 @@ bool EnableWindowShadow(HWND window, bool enable)
     }
     else
     {
-        // Windows 10: Handle shadow and border separately
+        // Windows 10: Use enhanced approach that actually works
         
         if (enable)
         {
-            // Enable shadow while removing 1px border
+            // Windows 10 requires a different approach than Windows 11
+            // The key is to use ENABLED policy but with proper border handling
             
-            // Step 1: Set non-client rendering policy to disabled to prevent border drawing
-            const DWORD policy = DWMNCRP_DISABLED;
+            // Step 1: Enable non-client rendering to allow shadow display
+            const DWORD policy = DWMNCRP_ENABLED;
             DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
             
-            // Step 2: Extend frame with 1px margins to create shadow without border
-            // Using 1px margins creates the shadow effect
-            static const MARGINS shadowMargins = {1, 1, 1, 1};
+            // Step 2: Use larger margins for proper shadow visibility
+            static const MARGINS shadowMargins = {5, 5, 5, 5};
             HRESULT hr = DwmExtendFrameIntoClientArea(window, &shadowMargins);
             
-            // Step 3: Force window to recalculate non-client area
-            if (SUCCEEDED(hr))
-            {
-                SetWindowPos(window, nullptr, 0, 0, 0, 0, 
-                    SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-            }
+            // Step 3: The key trick: Set window style to remove the border
+            // This is done at the window level, not DWM level
+            LONG_PTR style = GetWindowLongPtr(window, GWL_STYLE);
+            style &= ~(WS_BORDER | WS_THICKFRAME); // Remove border styles
+            SetWindowLongPtr(window, GWL_STYLE, style);
+            
+            // Step 4: Force window refresh to apply all changes
+            SetWindowPos(window, nullptr, 0, 0, 0, 0, 
+                SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
             
             return SUCCEEDED(hr);
         }
