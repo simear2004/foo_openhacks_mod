@@ -187,11 +187,12 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
         const DWORD messagePos = GetMessagePos();
         const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
 
-        // simulate move
+        // Check if click is in pseudo-caption area
         const auto& pseudoCaption = OpenHacksVars::PseudoCaptionSettings.get_value();
         Rect rectPseudoCaption = pseudoCaption.ToRect(mMainWindow);
         if (rectPseudoCaption.IsPointIn(pt))
         {
+            // Start window move - WM_SYSCOMMAND handler will restore if needed
             SendMessage(mMainWindow, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, MAKELPARAM(pt.x, pt.y));
             msg->message = WM_NULL;
             return;
@@ -203,9 +204,10 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
             const Rect rectForNonSizeing = GetRectForNonSizing();
             if (!rectForNonSizeing.IsPointIn(pt))
             {
-                if (threadInfo.flags & (GUI_INMOVESIZE))
-                    return;
-
+                bool isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
+                
+                if (isInMoveSize) return;
+                
                 const int32_t hittest = (int32_t)SendMessage(mMainWindow, WM_NCHITTEST, 0, MAKELPARAM(pt.x, pt.y));
                 if (hittest != HTCLIENT)
                 {
@@ -215,6 +217,80 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
                     return;
                 }
             }
+        }
+    }
+}
+
+LRESULT OpenHacksCore::OpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp)
+{
+    if (code >= HC_ACTION && (UINT)wp == PM_REMOVE)
+    {
+        auto msg = (LPMSG)(lp);
+        if (IsMainOrChildWindow(msg->hwnd))
+        {
+            switch (msg->message)
+            {
+            case WM_MOUSEMOVE:
+                OnHookMouseMove(msg);
+                break;
+
+            case WM_LBUTTONDOWN:
+                OnHookLButtonDown(msg);
+                break;
+
+            case WM_LBUTTONDBLCLK:
+                OnHookLButtonDblClk(msg);
+                break;
+
+            default:
+                break;
+            }
+        }
+    }
+
+    return CallNextHookEx(mGetMsgHook, code, wp, lp);
+}
+
+void OpenHacksCore::OnHookLButtonDblClk(LPMSG msg)
+{
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleDefault)
+        return;
+
+    GUITHREADINFO threadInfo = {};
+    threadInfo.cbSize = sizeof(threadInfo);
+    if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
+    {
+        if (threadInfo.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE))
+            return;
+
+        const DWORD messagePos = GetMessagePos();
+        const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
+
+        // Check if double-click is in pseudo-caption area
+        const auto& pseudoCaption = OpenHacksVars::PseudoCaptionSettings.get_value();
+        Rect rectPseudoCaption = pseudoCaption.ToRect(mMainWindow);
+        if (rectPseudoCaption.IsPointIn(pt))
+        {
+            // If maximized or has saved state (custom maximize), restore it
+            if (Utility::IsMaximized(mMainWindow) || mSavedWindowState.has_value())
+            {
+                Restore();
+                msg->message = WM_NULL;
+                return;
+            }
+            
+            // If fullscreen, exit fullscreen
+            if (Utility::IsFullscreen(mMainWindow))
+            {
+                ExitFullscreen();
+                msg->message = WM_NULL;
+                return;
+            }
+            
+            // Normal case: maximize the window
+            Maximize();
+            msg->message = WM_NULL;
+            return;
         }
     }
 }
