@@ -75,10 +75,6 @@ public:
     STDMETHOD(get_PseudoCaptionLeft)(LONG* pValue);
     STDMETHOD(put_PseudoCaptionLeft)(LONG value);
 
-    // PseudoCaptionSettings Properties
-    STDMETHOD(get_PseudoCaptionLeft)(LONG* pValue);
-    STDMETHOD(put_PseudoCaptionLeft)(LONG value);
-
     STDMETHOD(get_PseudoCaptionTop)(LONG* pValue);
     STDMETHOD(put_PseudoCaptionTop)(LONG value);
 
