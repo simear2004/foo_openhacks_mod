@@ -24,7 +24,7 @@ static const GUID cfg_guid_saved_window_state = {0xb8c9d0e1, 0xf2a3, 0x4567, {0x
 cfg_bool ShowMainMenu(cfg_guid_show_main_menu, true);
 cfg_bool ShowStatusBar(cfg_guid_show_status_bar, true);
 cfg_int MainWindowFrameStyle(cfg_guid_main_window_frame_style, 0);
-cfg_bool EnableWin10Shadow(cfg_guid_enable_win10_shadow, false);
+cfg_bool EnableWin10Shadow(cfg_guid_enable_win10_shadow, true);
 cfg_bool DisableResizeWhenMaximized(cfg_guid_disable_resize_maximized, true);
 cfg_bool DisableResizeWhenFullscreen(cfg_guid_disable_resize_fullscreen, true);
 cfg_struct_t<PseudoCaptionParam> PseudoCaptionSettings(cfg_guid_pseudo_caption);
