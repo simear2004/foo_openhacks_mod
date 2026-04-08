@@ -1,228 +1,284 @@
 #include "pch.h"
-#include <sstream>
-#include "hacks_menu.h"
-#include "hacks_vars.h"
 #include "hacks_core.h"
+#include "hacks_vars.h"
 #include "win32_utils.h"
 
 namespace
 {
-static bool PopupMainMenu(HWND wnd)
+FORCEINLINE void UninstallWindowHook(HHOOK& hook)
 {
-    if (HMENU menu = OpenHacksMenu::Get().GenerateMenu())
+    if (hook != nullptr)
     {
-        POINT point = {};
-        ClientToScreen(wnd, &point);
-        const int32_t cmd = TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD, point.x, point.y, 0, wnd, nullptr);
-        OpenHacksMenu::Get().ExecuteMenuCommand(cmd);
-        DestroyMenu(menu);
-        return true;
+        UnhookWindowsHookEx(hook);
+        hook = nullptr;
     }
-
-    return false;
 }
-} // namespace
 
-bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
+FORCEINLINE INT HitTestToWMSZ(INT hittest)
 {
-    UNREFERENCED_PARAMETER(lp);
-    const auto cmd = static_cast<UINT>(wp & 0xFFF0);
-    switch (cmd)
+    switch (hittest)
     {
-    case SC_MOUSEMENU:
-        return PopupMainMenu(wnd);
-
+    case HTLEFT:
+        return WMSZ_LEFT;
+    case HTTOP:
+        return WMSZ_TOP;
+    case HTRIGHT:
+        return WMSZ_RIGHT;
+    case HTBOTTOM:
+        return WMSZ_BOTTOM;
+    case HTTOPLEFT:
+        return WMSZ_TOPLEFT;
+    case HTTOPRIGHT:
+        return WMSZ_TOPRIGHT;
+    case HTBOTTOMLEFT:
+        return WMSZ_BOTTOMLEFT;
+    case HTBOTTOMRIGHT:
+        return WMSZ_BOTTOMRIGHT;
     default:
         break;
     }
+    return 0;
+}
 
+} // namespace
+
+bool OpenHacksCore::InstallWindowHooks()
+{
+    if (InstallWindowHooksInternal())
+        return true;
+
+    mInstallHooksWin32Error = GetLastError();
+    mInitErrors |= HooksInstallError;
+    UninstallWindowHooks();
     return false;
 }
 
-LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
+bool OpenHacksCore::InstallWindowHooksInternal()
 {
-    // Check if resize should be disabled based on window state
-    bool shouldDisableResize = false;
-    
-    if (OpenHacksVars::DisableResizeWhenMaximized)
-    {
-        bool isMaximized = Utility::IsMaximized(wnd) || mSavedWindowState.has_value();
-        if (isMaximized)
-            shouldDisableResize = true;
-    }
-    
-    if (OpenHacksVars::DisableResizeWhenFullscreen)
-    {
-        bool isFullscreen = Utility::IsFullscreen(wnd);
-        if (isFullscreen)
-            shouldDisableResize = true;
-    }
-    
-    if (shouldDisableResize)
-    {
-        return HTCLIENT;
-    }
+    HINSTANCE hmod = core_api::get_my_instance();
+    const DWORD threadId = GetCurrentThreadId();
 
-    const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
-    const POINT border = GetBorderMetrics();
-    RECT rect = {};
-    GetWindowRect(mMainWindow, &rect);
-    enum EdgeMask
-    {
-        Left = 0b0001,
-        Right = 0b0010,
-        Top = 0b0100,
-        Bottom = 0b1000,
-    };
-
-    const auto result = Left * (cursor.x < (rect.left + border.x)) | Right * (cursor.x >= (rect.right - border.x)) | Top * (cursor.y < (rect.top + border.y)) |
-                        Bottom * (cursor.y >= (rect.bottom - border.y));
-    switch (result)
-    {
-    case Left:
-        return HTLEFT;
-    case Right:
-        return HTRIGHT;
-    case Top:
-        return HTTOP;
-    case Bottom:
-        return HTBOTTOM;
-    case Top | Left:
-        return HTTOPLEFT;
-    case Top | Right:
-        return HTTOPRIGHT;
-    case Bottom | Left:
-        return HTBOTTOMLEFT;
-    case Bottom | Right:
-        return HTBOTTOMRIGHT;
-    default:
-        return HTNOWHERE;
-    }
-}
-
-bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
-{
-    if (OpenHacksVars::MainWindowFrameStyle != WindowFrameStyleNoBorder)
+    mCallWndHook = SetWindowsHookExW(WH_CALLWNDPROC, StaticOpenHacksCallWndProc, hmod, threadId);
+    if (mCallWndHook == nullptr)
         return false;
 
-    // Check if resize should be disabled based on window state
-    bool shouldDisableResize = false;
-    
-    if (OpenHacksVars::DisableResizeWhenMaximized)
-    {
-        bool isMaximized = Utility::IsMaximized(wnd) || mSavedWindowState.has_value();
-        if (isMaximized)
-            shouldDisableResize = true;
-    }
-    
-    if (OpenHacksVars::DisableResizeWhenFullscreen)
-    {
-        bool isFullscreen = Utility::IsFullscreen(wnd);
-        if (isFullscreen)
-            shouldDisableResize = true;
-    }
-    
-    if (shouldDisableResize)
-    {
-        return false;
-    }
-
-    const int32_t hittest = (int32_t)LOWORD(lp);
-    if (hittest == HTCLIENT)
-        return false;
-
-    if (hittest == HTTOP || hittest == HTBOTTOM)
-        SetCursor(LoadCursor(nullptr, IDC_SIZENS));
-    else if (hittest == HTLEFT || hittest == HTRIGHT)
-        SetCursor(LoadCursor(nullptr, IDC_SIZEWE));
-    else if (hittest == HTTOPLEFT || hittest == HTBOTTOMRIGHT)
-        SetCursor(LoadCursor(nullptr, IDC_SIZENWSE));
-    else if (hittest == HTTOPRIGHT || hittest == HTBOTTOMLEFT)
-        SetCursor(LoadCursor(nullptr, IDC_SIZENESW));
-    else
+    mGetMsgHook = SetWindowsHookExW(WH_GETMESSAGE, StaticOpenHacksGetMessageProc, hmod, threadId);
+    if (mGetMsgHook == nullptr)
         return false;
 
     return true;
 }
 
-bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
+void OpenHacksCore::UninstallWindowHooks()
 {
-    return false;
+    UninstallWindowHook(mGetMsgHook);
+    UninstallWindowHook(mCallWndHook);
 }
 
-LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
 {
-    switch (msg)
+    if (code >= HC_ACTION)
     {
-    case WM_ERASEBKGND:
-    {
-        HDC hdc = (HDC)wp;
-        RECT rc;
-        GetClientRect(wnd, &rc);
-        
-        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-        
-        console::printf("[OpenHacks] WM_ERASEBKGND: Filling with R=%d G=%d B=%d (0x%06X)",
-                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor), bgColor);
-        
-        HBRUSH hBrush = CreateSolidBrush(bgColor);
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        
-        return TRUE;
+        const auto pcwps = reinterpret_cast<PCWPSTRUCT>(lp);
+        switch (pcwps->message)
+        {
+        case WM_CREATE:
+        {
+            if (mMainWindow == nullptr)
+            {
+                wchar_t className[MAX_PATH] = {};
+                GetClassNameW(pcwps->hwnd, className, ARRAYSIZE(className));
+                if (className == kDUIMainWindowClassName)
+                {
+                    mMainWindow = pcwps->hwnd;
+                    mMainWindowOriginProc = (WNDPROC)SetWindowLongPtr(pcwps->hwnd, GWLP_WNDPROC, (LONG_PTR)StaticOpenHacksMainWindowProc);
+                    OpenHacksVars::DPI = Utility::GetDPI(mMainMenuWindow);
+                    
+                    console::printf("[OpenHacks] Window subclassed via WM_CREATE hook");
+                    
+                    // Also set background brush here as backup
+                    COLORREF bgColor = Utility::GetFoobarBackgroundColor();
+                    HBRUSH hBrush = CreateSolidBrush(bgColor);
+                    SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
+                }
+            }
+
+            break;
+        }
+
+        default:
+            break;
+        }
     }
 
-    case WM_PAINT:
+    return CallNextHookEx(mCallWndHook, code, wp, lp);
+}
+
+LRESULT OpenHacksCore::OpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp)
+{
+    if (code >= HC_ACTION && (UINT)wp == PM_REMOVE)
     {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(wnd, &ps);
-        
-        RECT rc;
-        GetClientRect(wnd, &rc);
-        
-        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-        HBRUSH hBrush = CreateSolidBrush(bgColor);
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        
-        EndPaint(wnd, &ps);
-        
-        console::printf("[OpenHacks] WM_PAINT: Filled with R=%d G=%d B=%d",
-                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
-        
-        return 0;
+        auto msg = (LPMSG)(lp);
+        if (IsMainOrChildWindow(msg->hwnd))
+        {
+            switch (msg->message)
+            {
+            case WM_MOUSEMOVE:
+                OnHookMouseMove(msg);
+                break;
+
+            case WM_LBUTTONDOWN:
+                OnHookLButtonDown(msg);
+                break;
+
+            case WM_LBUTTONDBLCLK:
+                OnHookLButtonDblClk(msg);
+                break;
+
+            default:
+                break;
+            }
+        }
     }
 
-    case WM_SYSCOMMAND:
-        if (OnSysCommand(wnd, wp, lp))
-            return 0;
-        break;
+    return CallNextHookEx(mGetMsgHook, code, wp, lp);
+}
 
-    case WM_NCHITTEST:
-        return OnNCHitTest(wnd, wp, lp);
+void OpenHacksCore::OnHookMouseMove(LPMSG msg)
+{
+    if (OpenHacksVars::MainWindowFrameStyle != WindowFrameStyleNoBorder)
+        return;
 
-    case WM_SETCURSOR:
-        if (OnSetCursor(wnd, wp, lp))
-            return 1;
-        break;
+    GUITHREADINFO threadInfo = {};
+    threadInfo.cbSize = sizeof(threadInfo);
+    if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
+    {
+        if (threadInfo.hwndCapture != nullptr && threadInfo.hwndCapture != mMainWindow)
+            return;
 
-    case WM_NCACTIVATE:
+        if (threadInfo.flags & (GUI_INMENUMODE | GUI_INMOVESIZE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE))
+            return;
+
+        const DWORD messagePos = GetMessagePos();
+        const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
+        const Rect rectForNonSizeing = GetRectForNonSizing();
+        if (rectForNonSizeing.IsPointIn(pt))
+        {
+            if (mRequireRevertCursor)
+            {
+                mRequireRevertCursor = false;
+                SendMessage(mMainWindow, WM_SETCURSOR, (WPARAM)mMainWindow, MAKELPARAM(HTCLIENT, WM_MOUSEMOVE));
+            }
+
+            return;
+        }
+
+        const int32_t hittest = (int32_t)SendMessage(mMainWindow, WM_NCHITTEST, 0, MAKELPARAM(pt.x, pt.y));
+        if (hittest != HTCLIENT)
+        {
+            mRequireRevertCursor = true;
+            SendMessage(mMainWindow, WM_SETCURSOR, (WPARAM)mMainWindow, MAKELPARAM(hittest, WM_MOUSEMOVE));
+            msg->message = WM_NULL;
+        }
+    }
+}
+
+void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
+{
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleDefault)
+        return;
+
+    GUITHREADINFO threadInfo = {};
+    threadInfo.cbSize = sizeof(threadInfo);
+    if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
+    {
+        if (threadInfo.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE))
+            return;
+
+        const DWORD messagePos = GetMessagePos();
+        const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
+
+        // Check if click is in pseudo-caption area
+        const auto& pseudoCaption = OpenHacksVars::PseudoCaptionSettings.get_value();
+        Rect rectPseudoCaption = pseudoCaption.ToRect(mMainWindow);
+        if (rectPseudoCaption.IsPointIn(pt))
+        {
+            // Disable drag when maximized or fullscreen
+            if (Utility::IsMaximized(mMainWindow) || mSavedWindowState.has_value() || Utility::IsFullscreen(mMainWindow))
+            {
+                // Do nothing - disable dragging in maximized/fullscreen state
+                return;
+            }
+            
+            // Normal case: start moving the window
+            SendMessage(mMainWindow, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, MAKELPARAM(pt.x, pt.y));
+            msg->message = WM_NULL;
+            return;
+        }
+
         if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
-            return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, -1);
-        break;
-
-    case WM_SIZE:
-        if (OnSize(wnd, wp, lp))
-            return 0;
-        break;
-
-    case WM_DPICHANGED:
-        OpenHacksVars::DPI = static_cast<uint32_t>(LOWORD(wp));
-        break;
-
-    default:
-        break;
+        {
+            // simulate resizing
+            const Rect rectForNonSizeing = GetRectForNonSizing();
+            if (!rectForNonSizeing.IsPointIn(pt))
+            {
+                bool isInMoveSize = (threadInfo.flags & GUI_INMOVESIZE) != 0;
+                
+                if (isInMoveSize) return;
+                
+                const int32_t hittest = (int32_t)SendMessage(mMainWindow, WM_NCHITTEST, 0, MAKELPARAM(pt.x, pt.y));
+                if (hittest != HTCLIENT)
+                {
+                    SendMessage(mMainWindow, WM_SETCURSOR, (WPARAM)mMainWindow, MAKELPARAM(hittest, WM_MOUSEMOVE));
+                    SendMessage(mMainWindow, WM_SYSCOMMAND, SC_SIZE | HitTestToWMSZ(hittest), MAKELPARAM(pt.x, pt.y));
+                    msg->message = WM_NULL;
+                    return;
+                }
+            }
+        }
     }
+}
 
-    return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, lp);
+void OpenHacksCore::OnHookLButtonDblClk(LPMSG msg)
+{
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleDefault)
+        return;
+
+    GUITHREADINFO threadInfo = {};
+    threadInfo.cbSize = sizeof(threadInfo);
+    if (GetGUIThreadInfo(GetCurrentThreadId(), &threadInfo))
+    {
+        if (threadInfo.flags & (GUI_INMENUMODE | GUI_POPUPMENUMODE | GUI_SYSTEMMENUMODE))
+            return;
+
+        const DWORD messagePos = GetMessagePos();
+        const POINT pt = {GET_X_LPARAM(messagePos), GET_Y_LPARAM(messagePos)};
+
+        // Check if double-click is in pseudo-caption area
+        const auto& pseudoCaption = OpenHacksVars::PseudoCaptionSettings.get_value();
+        Rect rectPseudoCaption = pseudoCaption.ToRect(mMainWindow);
+        if (rectPseudoCaption.IsPointIn(pt))
+        {
+            // If maximized or has saved state (custom maximize), restore it
+            if (Utility::IsMaximized(mMainWindow) || mSavedWindowState.has_value())
+            {
+                Restore();
+                msg->message = WM_NULL;
+                return;
+            }
+            
+            // If fullscreen, exit fullscreen
+            if (Utility::IsFullscreen(mMainWindow))
+            {
+                ExitFullscreen();
+                msg->message = WM_NULL;
+                return;
+            }
+            
+            // Normal case: maximize the window
+            Maximize();
+            msg->message = WM_NULL;
+            return;
+        }
+    }
 }
