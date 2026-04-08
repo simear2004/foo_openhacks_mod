@@ -106,18 +106,18 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                 GetClassNameW(pcwps->hwnd, className, ARRAYSIZE(className));
                 if (className == kDUIMainWindowClassName)
                 {
-                    console::printf("[OpenHacks] WM_NCCREATE: Preparing background...");
+                    console::printf("[OpenHacks] WM_NCCREATE: Initializing background...");
                     
-                    // 1. 确保全局画刷已更新
                     UpdateBackgroundBrush();
                     
-                    // 2. 立即设置窗口类的背景刷
                     SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)g_hBackgroundBrush);
                     
-                    // 3. 【关键】强制窗口在创建初期就使用这个背景，防止白色闪现
-                    // 设置 WS_CLIPCHILDREN 可以减少子控件加载时的背景暴露
                     LONG style = GetWindowLong(pcwps->hwnd, GWL_STYLE);
-                    SetWindowLong(pcwps->hwnd, GWL_STYLE, style | WS_CLIPCHILDREN);
+                    if (!(style & WS_CLIPCHILDREN))
+                    {
+                        SetWindowLong(pcwps->hwnd, GWL_STYLE, style | WS_CLIPCHILDREN);
+                        console::printf("[OpenHacks] WS_CLIPCHILDREN added to prevent background leak");
+                    }
                 }
             }
             break;
@@ -137,9 +137,10 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                     
                     console::printf("[OpenHacks] Window subclassed at WM_CREATE");
 
-                    // 再次确保背景刷生效（双重保险）
                     UpdateBackgroundBrush();
                     SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)g_hBackgroundBrush);
+
+                    RedrawWindow(pcwps->hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
                 }
             }
             break;
