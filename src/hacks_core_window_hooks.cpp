@@ -196,7 +196,14 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
         Rect rectPseudoCaption = pseudoCaption.ToRect(mMainWindow);
         if (rectPseudoCaption.IsPointIn(pt))
         {
-            // Start window move - WM_SYSCOMMAND handler will restore if needed
+            // Disable drag when maximized or fullscreen
+            if (Utility::IsMaximized(mMainWindow) || mSavedWindowState.has_value() || Utility::IsFullscreen(mMainWindow))
+            {
+                // Do nothing - disable dragging in maximized/fullscreen state
+                return;
+            }
+            
+            // Normal case: start moving the window
             SendMessage(mMainWindow, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, MAKELPARAM(pt.x, pt.y));
             msg->message = WM_NULL;
             return;
