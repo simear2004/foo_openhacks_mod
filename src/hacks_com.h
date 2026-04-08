@@ -44,6 +44,15 @@ __interface IOpenHacks : IDispatch
     COM_PROPGET(WindowFrameStyle, [out, retval] LONG* pValue);
     COM_PROPPUT(WindowFrameStyle, [in] LONG value);
 
+    COM_PROPGET(EnableWin10Shadow, [out, retval] VARIANT_BOOL* pValue);
+    COM_PROPPUT(EnableWin10Shadow, [in] VARIANT_BOOL value);
+
+    COM_PROPGET(DisableResizeWhenMaximized, [out, retval] VARIANT_BOOL* pValue);
+    COM_PROPPUT(DisableResizeWhenMaximized, [in] VARIANT_BOOL value);
+
+    COM_PROPGET(DisableResizeWhenFullscreen, [out, retval] VARIANT_BOOL* pValue);
+    COM_PROPPUT(DisableResizeWhenFullscreen, [in] VARIANT_BOOL value);
+
     // PseudoCaptionSettings Properties
     COM_PROPGET(PseudoCaptionLeft, [out, retval] LONG* pValue);
     COM_PROPPUT(PseudoCaptionLeft, [in] LONG value);
