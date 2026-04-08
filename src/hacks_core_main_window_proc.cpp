@@ -155,43 +155,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
     switch (msg)
     {
     case WM_ERASEBKGND:
-    {
-        HDC hdc = (HDC)wp;
-        RECT rc;
-        GetClientRect(wnd, &rc);
-        
-        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-        
-        console::printf("[OpenHacks] WM_ERASEBKGND: Filling with R=%d G=%d B=%d (0x%06X)",
-                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor), bgColor);
-        
-        HBRUSH hBrush = CreateSolidBrush(bgColor);
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        
-        return TRUE;
-    }
-
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(wnd, &ps);
-        
-        RECT rc;
-        GetClientRect(wnd, &rc);
-        
-        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-        HBRUSH hBrush = CreateSolidBrush(bgColor);
-        FillRect(hdc, &rc, hBrush);
-        DeleteObject(hBrush);
-        
-        EndPaint(wnd, &ps);
-        
-        console::printf("[OpenHacks] WM_PAINT: Filled with R=%d G=%d B=%d",
-                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
-        
-        return 0;
-    }
+        return FALSE;
 
     case WM_SYSCOMMAND:
         if (OnSysCommand(wnd, wp, lp))
