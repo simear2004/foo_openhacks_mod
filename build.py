@@ -7,7 +7,7 @@ import argparse
 SEVEN_ZIP_EXE = r'tools\7z.exe'
 VS_WHERE_EXE = r'tools\vswhere.exe'
 SOLUTION_FILE = 'foo_openhacks.sln'
-PROJECT_NAME = 'foo_openhacks'
+PROJECT_NAME = 'foo_openhacks_mod'
 
 def get_vs_install_dir():
     try:
