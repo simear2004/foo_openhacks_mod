@@ -1,8 +1,9 @@
 #include "pch.h"
 #include "hacks_version.h"
 
-static string_view_t OpenHacksFormatAbort = R"OH(OpenHacks v%s for foobar2000
+static string_view_t OpenHacksFormatAbort = R"OH(OpenHacksMod v%s for foobar2000
 author: ohyeah
+Mod: YeYo
 
 MSVC: v%s %s
 Compile: %s
