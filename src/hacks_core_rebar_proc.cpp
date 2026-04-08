@@ -6,27 +6,16 @@ LRESULT OpenHacksCore::OpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM 
 {
     switch (msg)
     {
-    case WM_WINDOWPOSCHANGING:
+    case RB_SHOWBAND:
     {
-        if (mMainMenuWindow != nullptr && OpenHacksVars::ShowMainMenu == false)
-        {
-            const UINT bandCount = (UINT)SendMessage(wnd, RB_GETBANDCOUNT, 0, 0);
-            for (UINT i = 0; i < bandCount; ++i)
-            {
-                REBARBANDINFO rebarInfo = {};
-                rebarInfo.cbSize = sizeof(rebarInfo);
-                rebarInfo.fMask = RBBIM_CHILD | RBBIM_STYLE;
-                SendMessage(wnd, RB_GETBANDINFO, (WPARAM)i, (LPARAM)&rebarInfo);
-                if (mMainMenuWindow == rebarInfo.hwndChild)
-                {
-                    if (!(rebarInfo.fStyle & RBBS_HIDDEN))
-                    {
-                        SendMessage(wnd, RB_SHOWBAND, (WPARAM)i, (LPARAM)FALSE);
-                    }
-                    break;
-                }
-            }
-        }
+        if (mMainMenuWindow == nullptr || OpenHacksVars::ShowMainMenu == true)
+            break;
+        REBARBANDINFO rebarInfo = {};
+        rebarInfo.cbSize = sizeof(rebarInfo);
+        rebarInfo.fMask = RBBIM_CHILD;
+        SendMessage(wnd, RB_GETBANDINFO, wp, (LPARAM)&rebarInfo);
+        if (mMainMenuWindow == rebarInfo.hwndChild)
+            lp = 0; // alter show flag anyway
         break;
     }
 
