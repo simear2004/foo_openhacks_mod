@@ -40,6 +40,22 @@ FORCEINLINE INT HitTestToWMSZ(INT hittest)
     return 0;
 }
 
+static HBRUSH g_hBackgroundBrush = nullptr;
+static COLORREF g_lastBgColor = CLR_INVALID;
+
+FORCEINLINE void UpdateBackgroundBrush()
+{
+    COLORREF currentColor = Utility::GetFoobarBackgroundColor();
+    if (currentColor != g_lastBgColor)
+    {
+        if (g_hBackgroundBrush) DeleteObject(g_hBackgroundBrush);
+        g_hBackgroundBrush = CreateSolidBrush(currentColor);
+        g_lastBgColor = currentColor;
+        console::printf("[OpenHacks] Global background brush updated to R=%d G=%d B=%d",
+                      GetRValue(currentColor), GetGValue(currentColor), GetBValue(currentColor));
+    }
+}
+
 } // namespace
 
 bool OpenHacksCore::InstallWindowHooks()
@@ -90,15 +106,18 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                 GetClassNameW(pcwps->hwnd, className, ARRAYSIZE(className));
                 if (className == kDUIMainWindowClassName)
                 {
-                    console::printf("[OpenHacks] WM_NCCREATE received, setting background brush early");
+                    console::printf("[OpenHacks] WM_NCCREATE: Preparing background...");
                     
-                    // 立即设置背景刷
-                    COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-                    HBRUSH hBrush = CreateSolidBrush(bgColor);
-                    SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
+                    // 1. 确保全局画刷已更新
+                    UpdateBackgroundBrush();
                     
-                    console::printf("[OpenHacks] Background brush set to R=%d G=%d B=%d at WM_NCCREATE",
-                                  GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
+                    // 2. 立即设置窗口类的背景刷
+                    SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)g_hBackgroundBrush);
+                    
+                    // 3. 【关键】强制窗口在创建初期就使用这个背景，防止白色闪现
+                    // 设置 WS_CLIPCHILDREN 可以减少子控件加载时的背景暴露
+                    LONG style = GetWindowLong(pcwps->hwnd, GWL_STYLE);
+                    SetWindowLong(pcwps->hwnd, GWL_STYLE, style | WS_CLIPCHILDREN);
                 }
             }
             break;
@@ -118,14 +137,11 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                     
                     console::printf("[OpenHacks] Window subclassed at WM_CREATE");
 
-                    // 【关键修改】在子类化完成后，立即强制重绘背景
-                    // RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN 确保所有区域都被重新绘制
-                    RedrawWindow(pcwps->hwnd, nullptr, nullptr, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-                    
-                    console::printf("[OpenHacks] Forced immediate redraw to apply background color");
+                    // 再次确保背景刷生效（双重保险）
+                    UpdateBackgroundBrush();
+                    SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)g_hBackgroundBrush);
                 }
             }
-
             break;
         }
 
