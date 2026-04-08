@@ -429,4 +429,21 @@ bool IsFullscreen(HWND wnd)
            windowRect.bottom == monitorRect.bottom;
 }
 
+COLORREF GetFoobarBackgroundColor()
+{
+    try {
+        service_ptr_t<ui_config_manager> configMgr = ui_config_manager::tryGet();
+        if (configMgr.is_valid()) {
+            t_ui_color color = 0;
+            if (configMgr->query_color(ui_color_background, color)) {
+                return static_cast<COLORREF>(color);
+            }
+        }
+    }
+    catch (...) {
+    }
+    
+    return GetSysColor(COLOR_WINDOW);
+}
+
 } // namespace Utility
