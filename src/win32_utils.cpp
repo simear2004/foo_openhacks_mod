@@ -431,19 +431,74 @@ bool IsFullscreen(HWND wnd)
 
 COLORREF GetFoobarBackgroundColor()
 {
+    console::printf("[OpenHacks] === GetFoobarBackgroundColor called ===");
+    
+    // Method 1: Try to get from ui_config_manager (foobar2000 v2.0+)
     try {
         service_ptr_t<ui_config_manager> configMgr = ui_config_manager::tryGet();
         if (configMgr.is_valid()) {
+            console::printf("[OpenHacks] ui_config_manager is valid");
+            
             t_ui_color color = 0;
-            if (configMgr->query_color(ui_color_background, color)) {
-                return static_cast<COLORREF>(color);
+            bool queryResult = configMgr->query_color(ui_color_background, color);
+            console::printf("[OpenHacks] query_color returned: %s, color value: 0x%06X", 
+                          queryResult ? "true" : "false", color);
+            
+            if (queryResult) {
+                COLORREF result = static_cast<COLORREF>(color);
+                console::printf("[OpenHacks] Returning color from ui_config_manager: R=%d G=%d B=%d",
+                              GetRValue(result), GetGValue(result), GetBValue(result));
+                return result;
             }
+            
+            // If query_color failed but we have dark mode info, use it
+            bool isDark = configMgr->is_dark_mode();
+            console::printf("[OpenHacks] is_dark_mode: %s", isDark ? "true" : "false");
+            
+            if (isDark) {
+                console::printf("[OpenHacks] Returning dark mode color: R=32 G=32 B=32");
+                return RGB(32, 32, 32);
+            }
+        } else {
+            console::printf("[OpenHacks] ui_config_manager is NOT valid (nullptr)");
         }
     }
+    catch (std::exception& e) {
+        console::printf("[OpenHacks] Exception in ui_config_manager: %s", e.what());
+    }
     catch (...) {
+        console::printf("[OpenHacks] Unknown exception in ui_config_manager");
     }
     
-    return GetSysColor(COLOR_WINDOW);
+    // Method 2: Check registry for Windows app mode (dark/light)
+    console::printf("[OpenHacks] Checking Windows registry for app mode...");
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 
+                      0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        DWORD appsUseLightTheme = 1;
+        DWORD size = sizeof(appsUseLightTheme);
+        if (RegQueryValueExW(hKey, L"AppsUseLightTheme", nullptr, nullptr, 
+                             reinterpret_cast<LPBYTE>(&appsUseLightTheme), &size) == ERROR_SUCCESS) {
+            console::printf("[OpenHacks] Registry AppsUseLightTheme: %d", appsUseLightTheme);
+            RegCloseKey(hKey);
+            
+            if (appsUseLightTheme == 0) {
+                console::printf("[OpenHacks] Windows dark mode detected, returning: R=32 G=32 B=32");
+                return RGB(32, 32, 32);
+            }
+        } else {
+            console::printf("[OpenHacks] Failed to read AppsUseLightTheme from registry");
+            RegCloseKey(hKey);
+        }
+    } else {
+        console::printf("[OpenHacks] Failed to open registry key");
+    }
+    
+    // Fallback: Use system window background color
+    COLORREF sysColor = GetSysColor(COLOR_WINDOW);
+    console::printf("[OpenHacks] Fallback to system COLOR_WINDOW: R=%d G=%d B=%d",
+                  GetRValue(sysColor), GetGValue(sysColor), GetBValue(sysColor));
+    return sysColor;
 }
 
 } // namespace Utility
