@@ -183,13 +183,15 @@ void OpenHacksCore::ApplyMainWindowFrameStyle(WindowFrameStyle newStyle)
 {
     HWND mainWindow = core_api::get_main_window();
     Utility::ApplyWindowFrameStyle(mainWindow, newStyle);
-    // Handle shadow for NoBorder style
-    if (newStyle == WindowFrameStyleNoBorder)
+    
+    // Handle shadow for custom styles
+    if (newStyle != WindowFrameStyleDefault)
     {
-        // Check if window is maximized - if so, don't enable shadow
-        // (Maximize disables shadow, we shouldn't re-enable it)
+        // Check if window is maximized or in custom maximize state
         const bool isMaximized = Utility::IsMaximized(mainWindow) || mSavedWindowState.has_value();
-        Utility::EnableWindowShadow(mainWindow, isMaximized ? false : true);
+        
+        // If maximized, disable shadow to match Windows behavior; otherwise enable it
+        Utility::EnableWindowShadow(mainWindow, !isMaximized);
     }
 }
 
