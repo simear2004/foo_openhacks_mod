@@ -41,6 +41,28 @@ bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
 
 LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
 {
+    // Check if resize should be disabled based on window state
+    bool shouldDisableResize = false;
+    
+    if (OpenHacksVars::DisableResizeWhenMaximized)
+    {
+        bool isMaximized = Utility::IsMaximized(wnd) || mSavedWindowState.has_value();
+        if (isMaximized)
+            shouldDisableResize = true;
+    }
+    
+    if (OpenHacksVars::DisableResizeWhenFullscreen)
+    {
+        bool isFullscreen = Utility::IsFullscreen(wnd);
+        if (isFullscreen)
+            shouldDisableResize = true;
+    }
+    
+    if (shouldDisableResize)
+    {
+        return HTCLIENT;
+    }
+
     const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
     const POINT border = GetBorderMetrics();
     RECT rect = {};
@@ -82,6 +104,28 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
 {
     if (OpenHacksVars::MainWindowFrameStyle != WindowFrameStyleNoBorder)
         return false;
+
+    // Check if resize should be disabled based on window state
+    bool shouldDisableResize = false;
+    
+    if (OpenHacksVars::DisableResizeWhenMaximized)
+    {
+        bool isMaximized = Utility::IsMaximized(wnd) || mSavedWindowState.has_value();
+        if (isMaximized)
+            shouldDisableResize = true;
+    }
+    
+    if (OpenHacksVars::DisableResizeWhenFullscreen)
+    {
+        bool isFullscreen = Utility::IsFullscreen(wnd);
+        if (isFullscreen)
+            shouldDisableResize = true;
+    }
+    
+    if (shouldDisableResize)
+    {
+        return false;
+    }
 
     const int32_t hittest = (int32_t)LOWORD(lp);
     if (hittest == HTCLIENT)
