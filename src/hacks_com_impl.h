@@ -62,9 +62,6 @@ public:
     STDMETHOD(get_WindowFrameStyle)(LONG* pValue);
     STDMETHOD(put_WindowFrameStyle)(LONG value);
 
-    STDMETHOD(get_WindowFrameStyle)(LONG* pValue);
-    STDMETHOD(put_WindowFrameStyle)(LONG value);
-
     STDMETHOD(get_EnableWin10Shadow)(VARIANT_BOOL* pValue);
     STDMETHOD(put_EnableWin10Shadow)(VARIANT_BOOL value);
 
