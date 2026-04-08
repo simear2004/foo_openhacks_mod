@@ -95,14 +95,12 @@ bool EnableWindowShadow(HWND window, bool enable)
         if (!OpenHacksVars::EnableWin10Shadow)
         {
             // User disabled shadow on Windows 10 - use original behavior (no shadow)
-            if (enable)
-            {
-                const DWORD policy = DWMNCRP_USEWINDOWSTYLE;
-                DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
-                
-                static const MARGINS zeroMargins = {0, 0, 0, 0};
-                DwmExtendFrameIntoClientArea(window, &zeroMargins);
-            }
+            const DWORD policy = DWMNCRP_USEWINDOWSTYLE;
+            DwmSetWindowAttribute(window, DWMWA_NCRENDERING_POLICY, &policy, sizeof(policy));
+            
+            static const MARGINS zeroMargins = {0, 0, 0, 0};
+            DwmExtendFrameIntoClientArea(window, &zeroMargins);
+            
             return false;
         }
 
@@ -136,6 +134,7 @@ bool EnableWindowShadow(HWND window, bool enable)
         }
     }
 }
+
 uint32_t GetDPI(HWND window)
 {
     LoadUtilityProc();
@@ -393,7 +392,7 @@ void ExitFullscreen(HWND wnd, WindowState& state)
 
     // Restore from saved WINDOWPLACEMENT
     SetWindowPlacement(wnd, &state.wp);
-    
+
     // Re-enable DWM shadow for custom frame styles (NoCaption or NoBorder)
     EnableWindowShadow(wnd, true);
 
