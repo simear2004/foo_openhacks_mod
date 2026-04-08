@@ -70,5 +70,5 @@ jobs:
     - name: Upload fb2k-component artifact
       uses: actions/upload-artifact@v7
       with:
-        name: foo_openhacks.fb2k-component
-        path: ${{env.SOLUTION_FILE_PATH}}/foo_openhacks.fb2k-component
+        name: foo_openhacks_mod.fb2k-component
+        path: ${{env.SOLUTION_FILE_PATH}}/foo_openhacks_mod.fb2k-component
