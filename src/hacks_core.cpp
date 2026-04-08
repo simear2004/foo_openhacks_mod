@@ -17,7 +17,7 @@ void OpenHacksCore::Initialize()
         pfc::string8_fast errorMessage;
         if (mInitErrors & IncompatibleComponentInstalled)
         {
-            errorMessage << "\nOpenHacks is not compatible with UIHacks.";
+            errorMessage << "\nOpenHacksMod is not compatible with UIHacks.";
         }
 
         if (mInitErrors & HooksInstallError)
@@ -26,7 +26,7 @@ void OpenHacksCore::Initialize()
                          << pfc::format_hex(mInstallHooksWin32Error, 8) << ")";
         }
 
-        popup_message_v2::g_complain(core_api::get_main_window(), "OpenHacks init failed", errorMessage);
+        popup_message_v2::g_complain(core_api::get_main_window(), "OpenHacksMod init failed", errorMessage);
         return;
     }
 
