@@ -60,10 +60,7 @@ void OpenHacksCore::Initialize()
             mReBarOriginProc = (WNDPROC)SetWindowLongPtr(mRebarWindow, GWLP_WNDPROC, (LONG_PTR)StaticOpenHacksReBarProc);
             mMainMenuWindow = FindWindowExW(mRebarWindow, nullptr, kDUIMainMenuBandClassName.data(), nullptr);
 
-            /* if (OpenHacksVars::ShowMainMenu == false)
-            {
-                ShowOrHideMenuBar(false);
-            } */
+            ShowOrHideMenuBar(OpenHacksVars::ShowMainMenu);
         }
 
         if (HWND statusBar = FindWindowExW(window, nullptr, kDUIStatusBarClassName.data(), nullptr))
@@ -136,55 +133,13 @@ void OpenHacksCore::ShowOrHideStatusBar(bool value)
     SendMessage(core_api::get_main_window(), WM_SIZE, 0, 0);
 }
 
-/* bool OpenHacksCore::ShowOrHideMenuBar(bool value)
-{
-    if (mRebarWindow == nullptr || mMainMenuWindow == nullptr)
-        return false;
-
-    if (IsMenuBarVisible() == value)
-        return true;
-
-    const UINT bandCount = (UINT)SendMessage(mRebarWindow, RB_GETBANDCOUNT, 0, 0);
-    for (UINT i = 0; i < bandCount; ++i)
-    {
-        REBARBANDINFO rebarInfo = {};
-        rebarInfo.cbSize = sizeof(rebarInfo);
-        rebarInfo.fMask = RBBIM_CHILD;
-        SendMessage(mRebarWindow, RB_GETBANDINFO, (WPARAM)i, (LPARAM)&rebarInfo);
-        if (mMainMenuWindow == rebarInfo.hwndChild)
-        {
-            SendMessage(mRebarWindow, RB_SHOWBAND, (WPARAM)i, (LPARAM)value);
-            return true;
-        }
-    }
-
-    return false;
-} */
-
 bool OpenHacksCore::ShowOrHideMenuBar(bool value)
 {
     if (mRebarWindow == nullptr || mMainMenuWindow == nullptr)
         return false;
 
-    const UINT bandCount = (UINT)SendMessage(mRebarWindow, RB_GETBANDCOUNT, 0, 0);
-    for (UINT i = 0; i < bandCount; ++i)
-    {
-        REBARBANDINFO rebarInfo = {};
-        rebarInfo.cbSize = sizeof(rebarInfo);
-        rebarInfo.fMask = RBBIM_CHILD | RBBIM_STYLE;
-        SendMessage(mRebarWindow, RB_GETBANDINFO, (WPARAM)i, (LPARAM)&rebarInfo);
-        if (mMainMenuWindow == rebarInfo.hwndChild)
-        {
-            const bool isCurrentlyHidden = (rebarInfo.fStyle & RBBS_HIDDEN) != 0;
-            if (isCurrentlyHidden == !value)
-                return true;
-            
-            SendMessage(mRebarWindow, RB_SHOWBAND, (WPARAM)i, (LPARAM)value);
-            return true;
-        }
-    }
-
-    return false;
+    SendMessage(core_api::get_main_window(), WM_SIZE, 0, 0);
+    return true;
 }
 
 bool OpenHacksCore::CheckIncompatibleComponents()
