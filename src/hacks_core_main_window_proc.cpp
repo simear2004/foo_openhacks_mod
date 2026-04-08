@@ -161,8 +161,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
         GetClientRect(wnd, &rc);
         
         COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-        console::printf("[OpenHacks] WM_ERASEBKGND triggered! Filling with R=%d G=%d B=%d",
-                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
+        
         HBRUSH hBrush = CreateSolidBrush(bgColor);
         FillRect(hdc, &rc, hBrush);
         DeleteObject(hBrush);
@@ -172,25 +171,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
 
     case WM_PAINT:
     {
-        LRESULT result = CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, lp);
-        
-        if (result == 0)
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(wnd, &ps);
-            
-            RECT rc;
-            GetClientRect(wnd, &rc);
-            
-            COLORREF bgColor = Utility::GetFoobarBackgroundColor();
-            HBRUSH hBrush = CreateSolidBrush(bgColor);
-            FillRect(hdc, &rc, hBrush);
-            DeleteObject(hBrush);
-            
-            EndPaint(wnd, &ps);
-        }
-        
-        return result;
+        return CallWindowProc(mMainWindowOriginProc, wnd, msg, wp, lp);
     }
 
     case WM_SYSCOMMAND:
