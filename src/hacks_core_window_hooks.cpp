@@ -124,6 +124,10 @@ LRESULT OpenHacksCore::OpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp)
                 OnHookLButtonDown(msg);
                 break;
 
+            case WM_LBUTTONDBLCLK:
+                OnHookLButtonDblClk(msg);
+                break;
+
             default:
                 break;
             }
@@ -219,36 +223,6 @@ void OpenHacksCore::OnHookLButtonDown(LPMSG msg)
             }
         }
     }
-}
-
-LRESULT OpenHacksCore::OpenHacksGetMessageProc(int code, WPARAM wp, LPARAM lp)
-{
-    if (code >= HC_ACTION && (UINT)wp == PM_REMOVE)
-    {
-        auto msg = (LPMSG)(lp);
-        if (IsMainOrChildWindow(msg->hwnd))
-        {
-            switch (msg->message)
-            {
-            case WM_MOUSEMOVE:
-                OnHookMouseMove(msg);
-                break;
-
-            case WM_LBUTTONDOWN:
-                OnHookLButtonDown(msg);
-                break;
-
-            case WM_LBUTTONDBLCLK:
-                OnHookLButtonDblClk(msg);
-                break;
-
-            default:
-                break;
-            }
-        }
-    }
-
-    return CallNextHookEx(mGetMsgHook, code, wp, lp);
 }
 
 void OpenHacksCore::OnHookLButtonDblClk(LPMSG msg)
