@@ -33,17 +33,9 @@ bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
         return PopupMainMenu(wnd);
 
     case SC_MOVE:
-        // When starting to move from pseudo-caption, check if we need to restore first
-        if (Utility::IsMaximized(wnd) || mSavedWindowState.has_value())
+        if (Utility::IsMaximized(wnd) || mSavedWindowState.has_value() || Utility::IsFullscreen(wnd))
         {
-            Restore();
-            break;
-        }
-        
-        if (Utility::IsFullscreen(wnd))
-        {
-            ExitFullscreen();
-            break;
+            mPendingMoveRestore = true;
         }
         break;
 
@@ -165,12 +157,36 @@ bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
     return false;
 }
 
+bool OpenHacksCore::OnWindowPosChanging(HWND wnd, LPARAM lp)
+{
+    if (!mPendingMoveRestore)
+        return false;
+
+    // Perform restore/exit fullscreen when window position is about to change
+    if (Utility::IsMaximized(wnd) || mSavedWindowState.has_value())
+    {
+        Restore();
+    }
+    else if (Utility::IsFullscreen(wnd))
+    {
+        ExitFullscreen();
+    }
+    
+    mPendingMoveRestore = false;
+    return false;
+}
+
 LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg)
     {
     case WM_SYSCOMMAND:
         if (OnSysCommand(wnd, wp, lp))
+            return 0;
+        break;
+
+    case WM_WINDOWPOSCHANGING:
+        if (OnWindowPosChanging(wnd, lp))
             return 0;
         break;
 
