@@ -41,67 +41,89 @@ bool OpenHacksCore::OnSysCommand(HWND wnd, WPARAM wp, LPARAM lp)
 
 LRESULT OpenHacksCore::OnNCHitTest(HWND wnd, WPARAM wp, LPARAM lp)
 {
-    // Check if resize should be disabled based on window state
+    // First, check if resize should be disabled based on window state
     bool shouldDisableResize = false;
     
+    // Check maximized state
     if (OpenHacksVars::DisableResizeWhenMaximized)
     {
-        bool isMaximized = Utility::IsMaximized(wnd) || mSavedWindowState.has_value();
-        if (isMaximized)
+        bool isMaximized = Utility::IsMaximized(wnd);
+        // Also check if we have saved window state (custom maximize)
+        bool hasSavedState = mSavedWindowState.has_value();
+        
+        if (isMaximized || hasSavedState)
+        {
             shouldDisableResize = true;
+        }
     }
     
+    // Check fullscreen state
     if (OpenHacksVars::DisableResizeWhenFullscreen)
     {
         bool isFullscreen = Utility::IsFullscreen(wnd);
         if (isFullscreen)
+        {
             shouldDisableResize = true;
+        }
     }
     
+    // If resize is disabled, return HTCLIENT to prevent border hit testing
     if (shouldDisableResize)
     {
         return HTCLIENT;
     }
 
-    const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
-    const POINT border = GetBorderMetrics();
-    RECT rect = {};
-    GetWindowRect(mMainWindow, &rect);
-    enum EdgeMask
+    // For custom frame styles (NoCaption/NoBorder), handle hit testing ourselves
+    if (OpenHacksVars::MainWindowFrameStyle != WindowFrameStyleDefault)
     {
-        Left = 0b0001,
-        Right = 0b0010,
-        Top = 0b0100,
-        Bottom = 0b1000,
-    };
+        const POINT cursor = {GET_X_LPARAM(lp), GET_Y_LPARAM(lp)};
+        const POINT border = GetBorderMetrics();
+        RECT rect = {};
+        GetWindowRect(mMainWindow, &rect);
+        
+        enum EdgeMask
+        {
+            Left = 0b0001,
+            Right = 0b0010,
+            Top = 0b0100,
+            Bottom = 0b1000,
+        };
 
-    const auto result = Left * (cursor.x < (rect.left + border.x)) | Right * (cursor.x >= (rect.right - border.x)) | Top * (cursor.y < (rect.top + border.y)) |
-                        Bottom * (cursor.y >= (rect.bottom - border.y));
-    switch (result)
-    {
-    case Left:
-        return HTLEFT;
-    case Right:
-        return HTRIGHT;
-    case Top:
-        return HTTOP;
-    case Bottom:
-        return HTBOTTOM;
-    case Top | Left:
-        return HTTOPLEFT;
-    case Top | Right:
-        return HTTOPRIGHT;
-    case Bottom | Left:
-        return HTBOTTOMLEFT;
-    case Bottom | Right:
-        return HTBOTTOMRIGHT;
-    default:
-        return HTNOWHERE;
+        const auto result = Left * (cursor.x < (rect.left + border.x)) | 
+                           Right * (cursor.x >= (rect.right - border.x)) | 
+                           Top * (cursor.y < (rect.top + border.y)) |
+                           Bottom * (cursor.y >= (rect.bottom - border.y));
+        
+        switch (result)
+        {
+        case Left:
+            return HTLEFT;
+        case Right:
+            return HTRIGHT;
+        case Top:
+            return HTTOP;
+        case Bottom:
+            return HTBOTTOM;
+        case Top | Left:
+            return HTTOPLEFT;
+        case Top | Right:
+            return HTTOPRIGHT;
+        case Bottom | Left:
+            return HTBOTTOMLEFT;
+        case Bottom | Right:
+            return HTBOTTOMRIGHT;
+        default:
+            return HTNOWHERE;
+        }
     }
+    
+    // For Default style, let Windows handle hit testing
+    return CallWindowProc(mMainWindowOriginProc, wnd, WM_NCHITTEST, wp, lp);
 }
 
 bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
 {
+    // Only handle cursor for NoBorder style
     if (OpenHacksVars::MainWindowFrameStyle != WindowFrameStyleNoBorder)
         return false;
 
@@ -110,18 +132,25 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
     
     if (OpenHacksVars::DisableResizeWhenMaximized)
     {
-        bool isMaximized = Utility::IsMaximized(wnd) || mSavedWindowState.has_value();
-        if (isMaximized)
+        bool isMaximized = Utility::IsMaximized(wnd);
+        bool hasSavedState = mSavedWindowState.has_value();
+        
+        if (isMaximized || hasSavedState)
+        {
             shouldDisableResize = true;
+        }
     }
     
     if (OpenHacksVars::DisableResizeWhenFullscreen)
     {
         bool isFullscreen = Utility::IsFullscreen(wnd);
         if (isFullscreen)
+        {
             shouldDisableResize = true;
+        }
     }
     
+    // If resize is disabled, don't change cursor
     if (shouldDisableResize)
     {
         return false;
