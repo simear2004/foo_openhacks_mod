@@ -32,6 +32,14 @@ void OpenHacksCore::Initialize()
 
     if (HWND window = core_api::get_main_window())
     {
+        // Set background brush immediately after getting the main window
+        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
+        HBRUSH hBrush = CreateSolidBrush(bgColor);
+        SetClassLongPtr(window, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
+        
+        console::printf("[OpenHacks] Initialize: Background brush set to R=%d G=%d B=%d",
+                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor));
+        
         // Restore saved window state from persistent storage
         auto& savedWindowData = OpenHacksVars::SavedWindowState.get_value();
         if (savedWindowData.wp.rcNormalPosition.right > savedWindowData.wp.rcNormalPosition.left &&
@@ -74,6 +82,10 @@ void OpenHacksCore::Initialize()
 
         // always send WM_SIZE in order to update rectangle stat internal.
         SendMessage(window, WM_SIZE, 0, 0);
+        
+        // Force immediate redraw
+        InvalidateRect(window, nullptr, TRUE);
+        UpdateWindow(window);
     }
 }
 
