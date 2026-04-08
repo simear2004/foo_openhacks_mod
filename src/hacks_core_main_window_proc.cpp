@@ -161,13 +161,17 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
         GetClientRect(wnd, &rc);
         
         COLORREF bgColor = Utility::GetFoobarBackgroundColor();
+        
+        console::printf("[OpenHacks] WM_ERASEBKGND: Using background color R=%d G=%d B=%d (0x%06X)",
+                      GetRValue(bgColor), GetGValue(bgColor), GetBValue(bgColor), bgColor);
+        
         HBRUSH hBrush = CreateSolidBrush(bgColor);
         FillRect(hdc, &rc, hBrush);
         DeleteObject(hBrush);
         
         return TRUE;
     }
-    
+
     case WM_SYSCOMMAND:
         if (OnSysCommand(wnd, wp, lp))
             return 0;
@@ -191,7 +195,7 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
             return 0;
         break;
 
-    case WM_DPICHANGED: // fixme: won't receive currently(DPI System aware).
+    case WM_DPICHANGED:
         OpenHacksVars::DPI = static_cast<uint32_t>(LOWORD(wp));
         break;
 
