@@ -2,6 +2,55 @@
 #include "hacks_core.h"
 #include "hacks_vars.h"
 #include "win32_utils.h"
+#include <uxtheme.h>
+
+static LRESULT CALLBACK EarlyWindowSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+    switch (uMsg)
+    {
+    case WM_NCCREATE:
+    {
+        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
+        HBRUSH hBrush = CreateSolidBrush(bgColor);
+        SetClassLongPtr(hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
+        
+        LONG style = GetWindowLong(hWnd, GWL_STYLE);
+        SetWindowLong(hWnd, GWL_STYLE, style | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+        break;
+    }
+    
+    case WM_ERASEBKGND:
+    {
+        HDC hdc = (HDC)wParam;
+        RECT rc;
+        GetClientRect(hWnd, &rc);
+        
+        COLORREF bgColor = Utility::GetFoobarBackgroundColor();
+        HBRUSH hBrush = CreateSolidBrush(bgColor);
+        FillRect(hdc, &rc, hBrush);
+        DeleteObject(hBrush);
+        
+        return TRUE;
+    }
+    
+    case WM_SHOWWINDOW:
+    {
+        if (wParam == TRUE)
+        {
+            InvalidateRect(hWnd, NULL, TRUE);
+            UpdateWindow(hWnd);
+        }
+        break;
+    }
+    
+    case WM_DESTROY:
+        // 清理子类化
+        RemoveWindowSubclass(hWnd, EarlyWindowSubclassProc, uIdSubclass);
+        break;
+    }
+    
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
 
 namespace
 {
@@ -116,18 +165,8 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                 GetClassNameW(pcwps->hwnd, className, ARRAYSIZE(className));
                 if (className == kDUIMainWindowClassName)
                 {
-                    UpdateBackgroundBrush();
-                    SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)g_hBackgroundBrush);
-                    
-                    LONG style = GetWindowLong(pcwps->hwnd, GWL_STYLE);
-                    if (!(style & WS_CLIPCHILDREN))
-                    {
-                        SetWindowLong(pcwps->hwnd, GWL_STYLE, style | WS_CLIPCHILDREN);
-                    }
-                    if (!(style & WS_CLIPSIBLINGS))
-                    {
-                        SetWindowLong(pcwps->hwnd, GWL_STYLE, style | WS_CLIPSIBLINGS);
-                    }
+                    SetWindowSubclass(pcwps->hwnd, EarlyWindowSubclassProc, 0, 0);
+                    console::printf("[OpenHacks] Early window subclassing applied at WM_NCCREATE");
                 }
             }
             break;
