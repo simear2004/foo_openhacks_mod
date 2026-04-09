@@ -67,8 +67,21 @@ jobs:
       working-directory: ${{env.SOLUTION_FILE_PATH}}
       run: python build.py --rebuild
 
+    - name: Find fb2k-component file
+      id: find_component
+      shell: pwsh
+      run: |
+        $componentFile = Get-ChildItem -Path ${{env.SOLUTION_FILE_PATH}} -Filter "*.fb2k-component" | Select-Object -First 1
+        if ($componentFile) {
+          echo "component_name=$($componentFile.Name)" >> $env:GITHUB_OUTPUT
+          echo "Found component: $($componentFile.Name)"
+        } else {
+          Write-Error "No .fb2k-component file found!"
+          exit 1
+        }
+
     - name: Upload fb2k-component artifact
       uses: actions/upload-artifact@v7
       with:
-        name: foo_openhacks_mod.fb2k-component
-        path: ${{env.SOLUTION_FILE_PATH}}/foo_openhacks_mod.fb2k-component
+        name: ${{ steps.find_component.outputs.component_name }}
+        path: ${{env.SOLUTION_FILE_PATH}}/${{ steps.find_component.outputs.component_name }}
