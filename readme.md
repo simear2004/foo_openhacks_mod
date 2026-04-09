@@ -48,7 +48,7 @@ ohyeah(原版作者)
 dreamawake(foobox主题作者测试反馈)
 
 ### 下载（中文版本）：  
-[https://github.com/simear2004/foo_openhacks_mod/actions/（MSBuild）](https://www.esnpc.com/foo_openhacks_mod-for-foobar2000/)
+https://www.esnpc.com/foo_openhacks_mod-for-foobar2000/
 
 ### Build
 Visual Studio 2022
