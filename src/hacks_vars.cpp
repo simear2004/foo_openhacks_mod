@@ -72,7 +72,12 @@ namespace OpenHacksVars
         if (!g_fb2k_root.empty()) {
             SetEnvironmentVariableA("fb2k", g_fb2k_root.c_str());
             SetEnvironmentVariableA("foobar2000", g_fb2k_root.c_str());
-            console::printf("[OpenHacks] Env vars injected: %s", g_fb2k_root.c_str());
+            console::printf("[OpenHacks] Env var 'fb2k' injected: %s", g_fb2k_root.c_str());
+        }
+
+        if (!g_fb2k_profile.empty()) {
+            SetEnvironmentVariableA("fb2k_profile", g_fb2k_profile.c_str());
+            console::printf("[OpenHacks] Env var 'fb2k_profile' injected: %s", g_fb2k_profile.c_str());
         }
         
         auto& pseudoCaption = PseudoCaptionSettings.get_value();
@@ -87,11 +92,13 @@ namespace OpenHacksVars
 
 } // namespace OpenHacksVars
 
+// --- Custom Path Field Provider Implementation ---
 static const struct {
     const char* name;
 } kDisplayFields[] = {
-    {"fb2k_install"}, 
-    {"fb2k_profile"}  
+    {"fb2k"},
+    {"foobar2000"},
+    {"fb2k_profile"}
 };
 
 uint32_t custom_path_field_provider::get_field_count() {
@@ -111,14 +118,14 @@ bool custom_path_field_provider::process_field(uint32_t index, metadb_handle* ha
 
     const char* path_str = nullptr;
     
-    // 直接使用 OpenHacksVars 中已经初始化好的全局变量
     switch (index) {
-    case 0: // fb2k_install
+    case 0: // fb2k
+    case 1: // foobar2000 (Same as fb2k)
         if (!OpenHacksVars::g_fb2k_root.empty()) {
             path_str = OpenHacksVars::g_fb2k_root.c_str();
         }
         break;
-    case 1: // fb2k_profile
+    case 2: // fb2k_profile
         if (!OpenHacksVars::g_fb2k_profile.empty()) {
             path_str = OpenHacksVars::g_fb2k_profile.c_str();
         }
@@ -126,10 +133,7 @@ bool custom_path_field_provider::process_field(uint32_t index, metadb_handle* ha
     }
 
     if (path_str) {
-        // 调试日志
         console::formatter() << "[OpenHacks Debug] %" << kDisplayFields[index].name << "% resolved to: " << path_str << "\n";
-        
-        // 使用大佬代码中的 write 方式，兼容性最好
         out->write(titleformat_inputtypes::unknown, path_str, strlen(path_str));
         return true;
     }
