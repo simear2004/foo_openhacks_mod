@@ -34,7 +34,8 @@ void OpenHacksCore::Initialize()
     {
         LONG exStyle = GetWindowLong(window, GWL_EXSTYLE);
         SetWindowLong(window, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED);
-        
+        mUsedCompositedStyle = true;
+
         // Restore saved window state from persistent storage
         auto& savedWindowData = OpenHacksVars::SavedWindowState.get_value();
         if (savedWindowData.wp.rcNormalPosition.right > savedWindowData.wp.rcNormalPosition.left &&
@@ -77,6 +78,15 @@ void OpenHacksCore::Initialize()
 
         // always send WM_SIZE in order to update rectangle stat internal.
         SendMessage(window, WM_SIZE, 0, 0);
+
+        if (mUsedCompositedStyle)
+        {
+            LONG exStyle = GetWindowLong(window, GWL_EXSTYLE);
+            SetWindowLong(window, GWL_EXSTYLE, exStyle & ~WS_EX_COMPOSITED);
+            mUsedCompositedStyle = false;
+            
+            RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+        }
     }
 }
 
