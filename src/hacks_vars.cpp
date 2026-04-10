@@ -69,17 +69,44 @@ void InjectEnvironmentVariables()
 
     if (result1 && result2)
     {
-        console::printf("[OpenHacks] ✓ Environment variables injected successfully");
+        console::printf("[OpenHacks] ✓ Environment variables set successfully");
         console::printf("[OpenHacks]   %%fb2k%% = %s", g_fb2k_root.c_str());
         console::printf("[OpenHacks]   %%fb2k_profile%% = %s", g_fb2k_profile.c_str());
+        
+        // Verify by reading back
+        char verifyFb2k[MAX_PATH] = {0};
+        char verifyProfile[MAX_PATH] = {0};
+        DWORD len1 = GetEnvironmentVariableA("fb2k", verifyFb2k, MAX_PATH);
+        DWORD len2 = GetEnvironmentVariableA("fb2k_profile", verifyProfile, MAX_PATH);
+        
+        if (len1 > 0 && len2 > 0) {
+            console::printf("[OpenHacks] ✓ Verification successful - variables are readable");
+            console::printf("[OpenHacks]   Read back: fb2k=%s", verifyFb2k);
+            console::printf("[OpenHacks]   Read back: fb2k_profile=%s", verifyProfile);
+            
+            // Test path resolution
+            std::string testPath1 = "%fb2k%\\foobar2000.exe";
+            std::string resolved1 = ResolvePathVariables(testPath1.c_str());
+            console::printf("[OpenHacks]   Path test: %s -> %s", testPath1.c_str(), resolved1.c_str());
+            
+            std::string testPath2 = "%fb2k_profile%\\config.txt";
+            std::string resolved2 = ResolvePathVariables(testPath2.c_str());
+            console::printf("[OpenHacks]   Path test: %s -> %s", testPath2.c_str(), resolved2.c_str());
+        } else {
+            console::error("[OpenHacks] ✗ Verification failed - cannot read back variables");
+        }
     }
     else
     {
-        console::error("[OpenHacks] ✗ Failed to inject environment variables");
-        if (!result1)
-            console::error("[OpenHacks]   Failed to set fb2k variable");
-        if (!result2)
-            console::error("[OpenHacks]   Failed to set fb2k_profile variable");
+        console::error("[OpenHacks] ✗ Failed to set environment variables");
+        if (!result1) {
+            DWORD err = GetLastError();
+            console::error("[OpenHacks]   Failed to set fb2k (Error: %lu)", err);
+        }
+        if (!result2) {
+            DWORD err = GetLastError();
+            console::error("[OpenHacks]   Failed to set fb2k_profile (Error: %lu)", err);
+        }
     }
 }
 
@@ -87,11 +114,58 @@ void InitialseOpenHacksVars()
 {
     // Initialize paths
     const char* dllPath = core_api::get_my_full_path();
+    bool isPortable = core_api::is_portable_mode_enabled();
+    
+    console::printf("[OpenHacks] Installation mode: %s", isPortable ? "Portable" : "Standard");
+    console::printf("[OpenHacks] DLL path: %s", dllPath ? dllPath : "(null)");
+    
     if (dllPath) {
-        std::string path(dllPath);
-        size_t slash = path.find_last_of('\\');
-        if (slash != std::string::npos) {
-            g_fb2k_root = path.substr(0, slash);
+        std::string dllFullPath(dllPath);
+        
+        if (isPortable) {
+            // Portable mode: profile is under foobar2000 root
+            // DLL path: <fb2k_root>\profile\user-components-x64\foo_openhacks_mod\foo_openhacks_mod.dll
+            // Need to go up 3 levels to reach fb2k root
+            
+            std::string currentPath = dllFullPath;
+            for (int i = 0; i < 3; i++) {
+                size_t pos = currentPath.find_last_of('\\');
+                if (pos != std::string::npos) {
+                    currentPath = currentPath.substr(0, pos);
+                } else {
+                    break;
+                }
+            }
+            g_fb2k_root = currentPath;
+            
+            console::printf("[OpenHacks] Portable mode detected, calculated root: %s", g_fb2k_root.c_str());
+        } else {
+            // Standard mode: need to find foobar2000.exe location
+            // DLL is in user's AppData, but exe is in Program Files or custom install location
+            
+            // Strategy: Check common locations where foobar2000.exe might be
+            // 1. Same drive as DLL (unlikely for standard install)
+            // 2. Use registry or known paths
+            
+            // For standard install, we can try to get it from the module handle
+            HMODULE hModule = GetModuleHandleA(nullptr);
+            if (hModule) {
+                char exePath[MAX_PATH] = {0};
+                if (GetModuleFileNameA(hModule, exePath, MAX_PATH)) {
+                    std::string exeFullPath(exePath);
+                    size_t pos = exeFullPath.find_last_of('\\');
+                    if (pos != std::string::npos) {
+                        g_fb2k_root = exeFullPath.substr(0, pos);
+                        console::printf("[OpenHacks] Standard mode, found exe at: %s", g_fb2k_root.c_str());
+                    }
+                }
+            }
+            
+            // Fallback: if we still don't have it, try to extract from DLL path
+            if (g_fb2k_root.empty()) {
+                // This shouldn't happen in standard mode, but just in case
+                console::warning("[OpenHacks] Could not determine fb2k root in standard mode");
+            }
         }
     }
 
@@ -101,6 +175,7 @@ void InitialseOpenHacksVars()
         if (g_fb2k_profile.length() >= 7 && g_fb2k_profile.substr(0, 7) == "file://") {
             g_fb2k_profile = g_fb2k_profile.substr(7);
         }
+        console::printf("[OpenHacks] Profile path from API: %s", g_fb2k_profile.c_str());
     }
     
     // Inject environment variables
