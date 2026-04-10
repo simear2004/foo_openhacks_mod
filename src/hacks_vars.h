@@ -137,9 +137,9 @@ extern cfg_struct_t<WindowStateData> SavedWindowState;
 extern uint32_t DPI;
 
 // Path variables
-extern pfc::string8 g_fb2k_root;
-extern pfc::string8 g_fb2k_profile;
-pfc::string8 ResolvePathVariables(const char* input);
+extern std::string g_fb2k_root;
+extern std::string g_fb2k_profile;
+std::string ResolvePathVariables(const char* input);
 
 FORCEINLINE void ToggleShowMainMenu()
 {
