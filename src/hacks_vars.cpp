@@ -34,15 +34,24 @@ cfg_struct_t<WindowStateData> SavedWindowState(cfg_guid_saved_window_state);
 uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
 // Path variables implementation
-pfc::string8 g_fb2k_root;
-pfc::string8 g_fb2k_profile;
+std::string g_fb2k_root;
+std::string g_fb2k_profile;
 
-pfc::string8 ResolvePathVariables(const char* input)
+std::string ResolvePathVariables(const char* input)
 {
     if (!input) return "";
-    pfc::string8 result(input);
-    result.replace_string("%fb2k%", g_fb2k_root);
-    result.replace_string("%fb2k_profile%", g_fb2k_profile);
+    std::string result(input);
+    
+    auto replaceAll = [](std::string& str, const std::string& from, const std::string& to) {
+        size_t start_pos = 0;
+        while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+            str.replace(start_pos, from.length(), to);
+            start_pos += to.length(); 
+        }
+    };
+
+    replaceAll(result, "%fb2k%", g_fb2k_root);
+    replaceAll(result, "%fb2k_profile%", g_fb2k_profile);
     return result;
 }
 
@@ -51,18 +60,18 @@ void InitialseOpenHacksVars()
     // Initialize paths
     const char* dllPath = core_api::get_my_full_path();
     if (dllPath) {
-        pfc::string8 path(dllPath);
-        int slash = path.find_last_char('\\');
-        if (slash >= 0) {
-            g_fb2k_root = path.sub_string(0, slash);
+        std::string path(dllPath);
+        size_t slash = path.find_last_of('\\');
+        if (slash != std::string::npos) {
+            g_fb2k_root = path.substr(0, slash);
         }
     }
 
     const char* profilePath = core_api::get_profile_path();
     if (profilePath) {
         g_fb2k_profile = profilePath;
-        if (g_fb2k_profile.startswith("file://")) {
-            g_fb2k_profile.remove_chars(0, 7);
+        if (g_fb2k_profile.length() >= 7 && g_fb2k_profile.substr(0, 7) == "file://") {
+            g_fb2k_profile = g_fb2k_profile.substr(7);
         }
     }
     
