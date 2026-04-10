@@ -1,9 +1,7 @@
 #include "pch.h"
 #include "hacks_vars.h"
 #include "win32_utils.h"
-#include <windows.h>
 #include <string>
-#include "initquit.h"
 
 namespace OpenHacksVars
 {
@@ -36,62 +34,86 @@ cfg_struct_t<WindowStateData> SavedWindowState(cfg_guid_saved_window_state);
 // runtime vars
 uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
+// Path variables implementation
+std::string g_fb2k_root;
+std::string g_fb2k_profile;
+
+std::string ResolvePathVariables(const char* input)
+{
+    if (!input) return "";
+    std::string result(input);
+    
+    auto replaceAll = [](std::string& str, const std::string& from, const std::string& to) {
+        size_t start_pos = 0;
+        while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+            str.replace(start_pos, from.length(), to);
+            start_pos += to.length(); 
+        }
+    };
+
+    replaceAll(result, "%fb2k%", g_fb2k_root);
+    replaceAll(result, "%fb2k_profile%", g_fb2k_profile);
+    return result;
+}
+
+void InjectEnvironmentVariables()
+{
+    if (g_fb2k_root.empty() || g_fb2k_profile.empty())
+    {
+        console::warning("[OpenHacks] Environment variables not injected: paths are empty");
+        return;
+    }
+
+    BOOL result1 = SetEnvironmentVariableA("fb2k", g_fb2k_root.c_str());
+    BOOL result2 = SetEnvironmentVariableA("fb2k_profile", g_fb2k_profile.c_str());
+
+    if (result1 && result2)
+    {
+        console::printf("[OpenHacks] ✓ Environment variables injected successfully");
+        console::printf("[OpenHacks]   %%fb2k%% = %s", g_fb2k_root.c_str());
+        console::printf("[OpenHacks]   %%fb2k_profile%% = %s", g_fb2k_profile.c_str());
+    }
+    else
+    {
+        console::error("[OpenHacks] ✗ Failed to inject environment variables");
+        if (!result1)
+            console::error("[OpenHacks]   Failed to set fb2k variable");
+        if (!result2)
+            console::error("[OpenHacks]   Failed to set fb2k_profile variable");
+    }
+}
+
 void InitialseOpenHacksVars()
 {
-    try 
-    {
-        std::string fb2k_root;
-        const char* dllPath = core_api::get_my_full_path();
-        if (dllPath) {
-            std::string path(dllPath);
-            size_t slash = path.find_last_of('\\');
-            if (slash != std::string::npos) {
-                fb2k_root = path.substr(0, slash);
-            }
-        }
-
-        std::string fb2k_profile;
-        const char* profilePath = core_api::get_profile_path();
-        if (profilePath) {
-            fb2k_profile = profilePath;
-            if (fb2k_profile.length() >= 7 && fb2k_profile.substr(0, 7) == "file://") {
-                fb2k_profile = fb2k_profile.substr(7);
-            }
-        }
-
-        if (!fb2k_root.empty()) {
-            SetEnvironmentVariableA("fb2k", fb2k_root.c_str());
-            SetEnvironmentVariableA("FB2K", fb2k_root.c_str());
-        }
-        
-        if (!fb2k_profile.empty()) {
-            SetEnvironmentVariableA("fb2k_profile", fb2k_profile.c_str());
-            SetEnvironmentVariableA("FB2K_PROFILE", fb2k_profile.c_str());
-        }
-
-        auto& pseudoCaption = PseudoCaptionSettings.get_value();
-        if (pseudoCaption.height == 0)
-        {
-            auto height = Utility::GetSystemMetricsForDpi(SM_CYCAPTION, Utility::GetDPI(HWND_DESKTOP));
-            height += Utility::GetSystemMetricsForDpi(SM_CYFRAME, Utility::GetDPI(HWND_DESKTOP));
-            height += Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, Utility::GetDPI(HWND_DESKTOP));
-            pseudoCaption.height = height;
+    // Initialize paths
+    const char* dllPath = core_api::get_my_full_path();
+    if (dllPath) {
+        std::string path(dllPath);
+        size_t slash = path.find_last_of('\\');
+        if (slash != std::string::npos) {
+            g_fb2k_root = path.substr(0, slash);
         }
     }
-    catch (...) 
+
+    const char* profilePath = core_api::get_profile_path();
+    if (profilePath) {
+        g_fb2k_profile = profilePath;
+        if (g_fb2k_profile.length() >= 7 && g_fb2k_profile.substr(0, 7) == "file://") {
+            g_fb2k_profile = g_fb2k_profile.substr(7);
+        }
+    }
+    
+    // Inject environment variables
+    InjectEnvironmentVariables();
+    
+    auto& pseudoCaption = PseudoCaptionSettings.get_value();
+    if (pseudoCaption.height == 0)
     {
-        OutputDebugStringA("[OpenHacks] Initialization failed due to an exception.\n");
+        auto height = Utility::GetSystemMetricsForDpi(SM_CYCAPTION, Utility::GetDPI(HWND_DESKTOP));
+        height += Utility::GetSystemMetricsForDpi(SM_CYFRAME, Utility::GetDPI(HWND_DESKTOP));
+        height += Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, Utility::GetDPI(HWND_DESKTOP));
+        pseudoCaption.height = height;
     }
 }
 
 } // namespace OpenHacksVars
-
-class COpenHacksAutoInit : public init_callback_v2 {
-public:
-    void on_init() override {
-        OpenHacksVars::InitialseOpenHacksVars();
-    }
-    void on_quit() override {}
-};
-
-static service_factory_single_t<COpenHacksAutoInit> g_auto_init_factory;
