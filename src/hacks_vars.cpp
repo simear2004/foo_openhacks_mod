@@ -3,8 +3,6 @@
 #include "win32_utils.h"
 #include <windows.h>
 #include <string>
-#include <sdk/console.h>   // 确保包含控制台日志接口
-#include <sdk/filesystem.h> // 确保包含文件系统接口
 
 namespace OpenHacksVars
 {
