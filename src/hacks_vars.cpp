@@ -54,6 +54,7 @@ void InitialseOpenHacksVars()
         }
     }
 
+    // 注入环境变量
     if (!fb2k_root.empty()) {
         SetEnvironmentVariableA("fb2k", fb2k_root.c_str());
         SetEnvironmentVariableA("FB2K", fb2k_root.c_str());
@@ -63,6 +64,31 @@ void InitialseOpenHacksVars()
         SetEnvironmentVariableA("fb2k_profile", fb2k_profile.c_str());
         SetEnvironmentVariableA("FB2K_PROFILE", fb2k_profile.c_str());
     }
+
+    // --- 使用 Console 打印调试信息 ---
+    console::printf("========================================");
+    console::printf("[OpenHacks] Initialization Started...");
+    
+    if (!fb2k_root.empty()) {
+        console::printf("[OpenHacks] fb2k root detected: %s", fb2k_root.c_str());
+        // 验证环境变量是否真的设置进去了
+        const char* env_check = getenv("fb2k");
+        if (env_check) {
+            console::printf("[OpenHacks] Env Var 'fb2k' verified: %s", env_check);
+        } else {
+            console::printf("[OpenHacks] ERROR: Env Var 'fb2k' failed to set!");
+        }
+    } else {
+        console::printf("[OpenHacks] WARNING: Could not detect fb2k root path.");
+    }
+
+    if (!fb2k_profile.empty()) {
+        console::printf("[OpenHacks] fb2k profile detected: %s", fb2k_profile.c_str());
+    } else {
+        console::printf("[OpenHacks] WARNING: Could not detect fb2k profile path.");
+    }
+    
+    console::printf("========================================");
 
     auto& pseudoCaption = PseudoCaptionSettings.get_value();
     if (pseudoCaption.height == 0)
