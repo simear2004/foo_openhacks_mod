@@ -35,68 +35,53 @@ uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
 void InitialseOpenHacksVars()
 {
-    std::string fb2k_root;
-    const char* dllPath = core_api::get_my_full_path();
-    if (dllPath) {
-        std::string path(dllPath);
-        size_t slash = path.find_last_of('\\');
-        if (slash != std::string::npos) {
-            fb2k_root = path.substr(0, slash);
-        }
-    }
-
-    std::string fb2k_profile;
-    const char* profilePath = core_api::get_profile_path();
-    if (profilePath) {
-        fb2k_profile = profilePath;
-        if (fb2k_profile.length() >= 7 && fb2k_profile.substr(0, 7) == "file://") {
-            fb2k_profile = fb2k_profile.substr(7);
-        }
-    }
-
-    // 注入环境变量
-    if (!fb2k_root.empty()) {
-        SetEnvironmentVariableA("fb2k", fb2k_root.c_str());
-        SetEnvironmentVariableA("FB2K", fb2k_root.c_str());
-    }
-    
-    if (!fb2k_profile.empty()) {
-        SetEnvironmentVariableA("fb2k_profile", fb2k_profile.c_str());
-        SetEnvironmentVariableA("FB2K_PROFILE", fb2k_profile.c_str());
-    }
-
-    // --- 使用 Console 打印调试信息 ---
-    console::printf("========================================");
-    console::printf("[OpenHacks] Initialization Started...");
-    
-    if (!fb2k_root.empty()) {
-        console::printf("[OpenHacks] fb2k root detected: %s", fb2k_root.c_str());
-        // 验证环境变量是否真的设置进去了
-        const char* env_check = getenv("fb2k");
-        if (env_check) {
-            console::printf("[OpenHacks] Env Var 'fb2k' verified: %s", env_check);
-        } else {
-            console::printf("[OpenHacks] ERROR: Env Var 'fb2k' failed to set!");
-        }
-    } else {
-        console::printf("[OpenHacks] WARNING: Could not detect fb2k root path.");
-    }
-
-    if (!fb2k_profile.empty()) {
-        console::printf("[OpenHacks] fb2k profile detected: %s", fb2k_profile.c_str());
-    } else {
-        console::printf("[OpenHacks] WARNING: Could not detect fb2k profile path.");
-    }
-    
-    console::printf("========================================");
-
-    auto& pseudoCaption = PseudoCaptionSettings.get_value();
-    if (pseudoCaption.height == 0)
+    try 
     {
-        auto height = Utility::GetSystemMetricsForDpi(SM_CYCAPTION, Utility::GetDPI(HWND_DESKTOP));
-        height += Utility::GetSystemMetricsForDpi(SM_CYFRAME, Utility::GetDPI(HWND_DESKTOP));
-        height += Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, Utility::GetDPI(HWND_DESKTOP));
-        pseudoCaption.height = height;
+        std::string fb2k_root;
+        const char* dllPath = core_api::get_my_full_path();
+        if (dllPath) {
+            std::string path(dllPath);
+            size_t slash = path.find_last_of('\\');
+            if (slash != std::string::npos) {
+                fb2k_root = path.substr(0, slash);
+            }
+        }
+
+        std::string fb2k_profile;
+        const char* profilePath = core_api::get_profile_path();
+        if (profilePath) {
+            fb2k_profile = profilePath;
+            if (fb2k_profile.length() >= 7 && fb2k_profile.substr(0, 7) == "file://") {
+                fb2k_profile = fb2k_profile.substr(7);
+            }
+        }
+
+        // 注入环境变量
+        if (!fb2k_root.empty()) {
+            SetEnvironmentVariableA("fb2k", fb2k_root.c_str());
+            SetEnvironmentVariableA("FB2K", fb2k_root.c_str());
+            OutputDebugStringA(("[OpenHacks] Env 'fb2k' set to: " + fb2k_root + "\n").c_str());
+        }
+        
+        if (!fb2k_profile.empty()) {
+            SetEnvironmentVariableA("fb2k_profile", fb2k_profile.c_str());
+            SetEnvironmentVariableA("FB2K_PROFILE", fb2k_profile.c_str());
+            OutputDebugStringA(("[OpenHacks] Env 'fb2k_profile' set to: " + fb2k_profile + "\n").c_str());
+        }
+
+        auto& pseudoCaption = PseudoCaptionSettings.get_value();
+        if (pseudoCaption.height == 0)
+        {
+            auto height = Utility::GetSystemMetricsForDpi(SM_CYCAPTION, Utility::GetDPI(HWND_DESKTOP));
+            height += Utility::GetSystemMetricsForDpi(SM_CYFRAME, Utility::GetDPI(HWND_DESKTOP));
+            height += Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, Utility::GetDPI(HWND_DESKTOP));
+            pseudoCaption.height = height;
+        }
+    }
+    catch (...) 
+    {
+        // 即使出错也不要让 DLL 崩溃，只记录调试信息
+        OutputDebugStringA("[OpenHacks] Initialization failed due to an exception.\n");
     }
 }
 
