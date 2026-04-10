@@ -126,8 +126,6 @@ public:
     uint32_t get_field_count() override;
     void get_field_name(uint32_t index, pfc::string_base& out) override;
     bool process_field(uint32_t index, metadb_handle* handle, titleformat_text_out* out) override;
-private:
-    static void ensure_trailing_slash(pfc::string_base& path);
 };
 
 namespace OpenHacksVars
