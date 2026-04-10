@@ -38,35 +38,6 @@ namespace OpenHacksVars
     // runtime vars
     uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
-    bool PathVarHook::process_field(titleformat_text_out* p_out, const char* p_name, t_size p_name_length, bool& p_found_flag) {
-        p_found_flag = false;
-
-        if (pfc::stricmp_ascii_ex(p_name, p_name_length, "fb2k", SIZE_MAX) == 0 ||
-            pfc::stricmp_ascii_ex(p_name, p_name_length, "foobar2000", SIZE_MAX) == 0) {
-            
-            if (!g_fb2k_root.empty()) {
-                p_out->write(titleformat_inputtypes::unknown, g_fb2k_root.c_str(), g_fb2k_root.length());
-                p_found_flag = true;
-                return true;
-            }
-        }
-        
-        if (pfc::stricmp_ascii_ex(p_name, p_name_length, "fb2k_profile", SIZE_MAX) == 0) {
-             if (!g_fb2k_profile.empty()) {
-                p_out->write(titleformat_inputtypes::unknown, g_fb2k_profile.c_str(), g_fb2k_profile.length());
-                p_found_flag = true;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    bool PathVarHook::process_function(titleformat_text_out* p_out, const char* p_name, t_size p_name_length, titleformat_hook_function_params* p_params, bool& p_found_flag) {
-        p_found_flag = false;
-        return false;
-    }
-
     void InitialseOpenHacksVars()
     {
         const char* dllPath = core_api::get_my_full_path();
@@ -115,5 +86,3 @@ namespace OpenHacksVars
     }
 
 } // namespace OpenHacksVars
-
-static service_factory_single_t<OpenHacksVars::PathVarHook> g_path_var_hook_factory;
