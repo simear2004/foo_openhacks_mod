@@ -3,6 +3,8 @@
 #include "win32_utils.h"
 #include <windows.h>
 #include <string>
+#include <sdk/console.h>   // 确保包含控制台日志接口
+#include <sdk/filesystem.h> // 确保包含文件系统接口
 
 namespace OpenHacksVars
 {
@@ -86,3 +88,62 @@ namespace OpenHacksVars
     }
 
 } // namespace OpenHacksVars
+
+void custom_path_field_provider::ensure_trailing_slash(pfc::string_base& path) {
+    if (!path.is_empty()) {
+        char last_char = path[path.get_length() - 1];
+        if (last_char != '\\' && last_char != '/') {
+            path.append_char('\\');
+        }
+    }
+}
+
+uint32_t custom_path_field_provider::get_field_count() {
+    static const struct { const char* name; } fields[] = { {"fb2k_install"}, {"fb2k_profile"} };
+    return _countof(fields);
+}
+
+void custom_path_field_provider::get_field_name(uint32_t index, pfc::string_base& out) {
+    static const struct { const char* name; } fields[] = { {"fb2k_install"}, {"fb2k_profile"} };
+    if (index < _countof(fields)) {
+        out.set_string(fields[index].name);
+    } else {
+        out.reset();
+    }
+}
+
+bool custom_path_field_provider::process_field(uint32_t index, metadb_handle* handle, titleformat_text_out* out) {
+    static const struct { const char* name; } fields[] = { {"fb2k_install"}, {"fb2k_profile"} };
+    if (index >= _countof(fields)) return false;
+
+    pfc::string8 path;
+    bool success = false;
+    const char* field_name = fields[index].name;
+
+    try {
+        switch (index) {
+        case 0: // fb2k_install
+            filesystem::get_fb2k_directory(path);
+            success = !path.is_empty();
+            break;
+        case 1: // fb2k_profile
+            filesystem::get_config_directory(path);
+            success = !path.is_empty();
+            break;
+        }
+    } catch (...) {
+        console::print("CustomField Error: Exception in process_field");
+    }
+
+    if (success) {
+        ensure_trailing_slash(path);
+        // 调试日志：在控制台输出解析结果
+        console::formatter() << "[OpenHacks Debug] %" << field_name << "% resolved to: " << path.get_ptr() << "\n";
+        out->write(titleformat_inputtypes::unknown, path.get_ptr(), path.get_length());
+        return true;
+    }
+    
+    return false;
+}
+
+static service_factory_single_t<custom_path_field_provider> g_custom_path_field_provider;
