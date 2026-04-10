@@ -192,7 +192,6 @@
     <ClInclude Include="base_window.h" />
     <ClInclude Include="com_utils.h" />
     <ClInclude Include="hacks_com_impl.h" />
-    <ClInclude Include="hacks_filesystem.h" />
     <ClInclude Include="str.h" />
     <ClInclude Include="ui_overlay_window.h" />
     <ClInclude Include="win32_utils.h" />
@@ -214,7 +213,6 @@
   <ItemGroup>
     <ClCompile Include="base_window.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="hacks_filesystem.cpp" />
     <ClCompile Include="hacks_com_impl.cpp" />
     <ClCompile Include="hacks_com_impl2.cpp" />
     <ClCompile Include="hacks_core_rebar_proc.cpp" />
