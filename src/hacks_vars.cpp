@@ -35,6 +35,35 @@ uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
 void InitialseOpenHacksVars()
 {
+    std::string fb2k_root;
+    const char* dllPath = core_api::get_my_full_path();
+    if (dllPath) {
+        std::string path(dllPath);
+        size_t slash = path.find_last_of('\\');
+        if (slash != std::string::npos) {
+            fb2k_root = path.substr(0, slash);
+        }
+    }
+
+    std::string fb2k_profile;
+    const char* profilePath = core_api::get_profile_path();
+    if (profilePath) {
+        fb2k_profile = profilePath;
+        if (fb2k_profile.length() >= 7 && fb2k_profile.substr(0, 7) == "file://") {
+            fb2k_profile = fb2k_profile.substr(7);
+        }
+    }
+
+    if (!fb2k_root.empty()) {
+        SetEnvironmentVariableA("fb2k", fb2k_root.c_str());
+        SetEnvironmentVariableA("FB2K", fb2k_root.c_str());
+    }
+    
+    if (!fb2k_profile.empty()) {
+        SetEnvironmentVariableA("fb2k_profile", fb2k_profile.c_str());
+        SetEnvironmentVariableA("FB2K_PROFILE", fb2k_profile.c_str());
+    }
+
     auto& pseudoCaption = PseudoCaptionSettings.get_value();
     if (pseudoCaption.height == 0)
     {
