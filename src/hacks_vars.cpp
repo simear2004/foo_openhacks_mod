@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "hacks_vars.h"
 #include "win32_utils.h"
+#include <windows.h>
+#include <string>
+#include "initquit.h"
 
 namespace OpenHacksVars
 {
