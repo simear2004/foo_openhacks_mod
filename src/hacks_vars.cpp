@@ -33,8 +33,39 @@ cfg_struct_t<WindowStateData> SavedWindowState(cfg_guid_saved_window_state);
 // runtime vars
 uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
+// Path variables implementation
+pfc::string8 g_fb2k_root;
+pfc::string8 g_fb2k_profile;
+
+pfc::string8 ResolvePathVariables(const char* input)
+{
+    if (!input) return "";
+    pfc::string8 result(input);
+    result.replace_string("%fb2k%", g_fb2k_root);
+    result.replace_string("%fb2k_profile%", g_fb2k_profile);
+    return result;
+}
+
 void InitialseOpenHacksVars()
 {
+    // Initialize paths
+    const char* dllPath = core_api::get_my_full_path();
+    if (dllPath) {
+        pfc::string8 path(dllPath);
+        int slash = path.find_last_char('\\');
+        if (slash >= 0) {
+            g_fb2k_root = path.sub_string(0, slash);
+        }
+    }
+
+    const char* profilePath = core_api::get_profile_path();
+    if (profilePath) {
+        g_fb2k_profile = profilePath;
+        if (g_fb2k_profile.startswith("file://")) {
+            g_fb2k_profile.remove_chars(0, 7);
+        }
+    }
+    
     auto& pseudoCaption = PseudoCaptionSettings.get_value();
     if (pseudoCaption.height == 0)
     {
