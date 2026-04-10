@@ -87,57 +87,50 @@ namespace OpenHacksVars
 
 } // namespace OpenHacksVars
 
-void custom_path_field_provider::ensure_trailing_slash(pfc::string_base& path) {
-    if (!path.is_empty()) {
-        char last_char = path[path.get_length() - 1];
-        if (last_char != '\\' && last_char != '/') {
-            path.append_char('\\');
-        }
-    }
-}
+static const struct {
+    const char* name;
+} kDisplayFields[] = {
+    {"fb2k_install"}, 
+    {"fb2k_profile"}  
+};
 
 uint32_t custom_path_field_provider::get_field_count() {
-    static const struct { const char* name; } fields[] = { {"fb2k_install"}, {"fb2k_profile"} };
-    return _countof(fields);
+    return _countof(kDisplayFields);
 }
 
 void custom_path_field_provider::get_field_name(uint32_t index, pfc::string_base& out) {
-    static const struct { const char* name; } fields[] = { {"fb2k_install"}, {"fb2k_profile"} };
-    if (index < _countof(fields)) {
-        out.set_string(fields[index].name);
+    if (index < get_field_count()) {
+        out.set_string(kDisplayFields[index].name);
     } else {
         out.reset();
     }
 }
 
 bool custom_path_field_provider::process_field(uint32_t index, metadb_handle* handle, titleformat_text_out* out) {
-    static const struct { const char* name; } fields[] = { {"fb2k_install"}, {"fb2k_profile"} };
-    if (index >= _countof(fields)) return false;
+    if (index >= get_field_count()) return false;
 
-    pfc::string8 path;
-    bool success = false;
-    const char* field_name = fields[index].name;
-
-    try {
-        switch (index) {
-        case 0: // fb2k_install
-            filesystem::get_fb2k_directory(path);
-            success = !path.is_empty();
-            break;
-        case 1: // fb2k_profile
-            filesystem::get_config_directory(path);
-            success = !path.is_empty();
-            break;
+    const char* path_str = nullptr;
+    
+    // 直接使用 OpenHacksVars 中已经初始化好的全局变量
+    switch (index) {
+    case 0: // fb2k_install
+        if (!OpenHacksVars::g_fb2k_root.empty()) {
+            path_str = OpenHacksVars::g_fb2k_root.c_str();
         }
-    } catch (...) {
-        console::print("CustomField Error: Exception in process_field");
+        break;
+    case 1: // fb2k_profile
+        if (!OpenHacksVars::g_fb2k_profile.empty()) {
+            path_str = OpenHacksVars::g_fb2k_profile.c_str();
+        }
+        break;
     }
 
-    if (success) {
-        ensure_trailing_slash(path);
-        // 调试日志：在控制台输出解析结果
-        console::formatter() << "[OpenHacks Debug] %" << field_name << "% resolved to: " << path.get_ptr() << "\n";
-        out->write(titleformat_inputtypes::unknown, path.get_ptr(), path.get_length());
+    if (path_str) {
+        // 调试日志
+        console::formatter() << "[OpenHacks Debug] %" << kDisplayFields[index].name << "% resolved to: " << path_str << "\n";
+        
+        // 使用大佬代码中的 write 方式，兼容性最好
+        out->write(titleformat_inputtypes::unknown, path_str, strlen(path_str));
         return true;
     }
     
