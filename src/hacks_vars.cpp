@@ -41,19 +41,16 @@ namespace OpenHacksVars
     bool PathVarHook::process_field(titleformat_text_out* p_out, const char* p_name, t_size p_name_length, bool& p_found_flag) {
         p_found_flag = false;
 
-        // 检查是否是 %fb2k% 或 %foobar2000%
         if (pfc::stricmp_ascii_ex(p_name, p_name_length, "fb2k", SIZE_MAX) == 0 ||
             pfc::stricmp_ascii_ex(p_name, p_name_length, "foobar2000", SIZE_MAX) == 0) {
             
             if (!g_fb2k_root.empty()) {
-                // 使用 titleformat_inputtypes::unknown 作为输入类型
                 p_out->write(titleformat_inputtypes::unknown, g_fb2k_root.c_str(), g_fb2k_root.length());
                 p_found_flag = true;
                 return true;
             }
         }
         
-        // 支持 %fb2k_profile%
         if (pfc::stricmp_ascii_ex(p_name, p_name_length, "fb2k_profile", SIZE_MAX) == 0) {
              if (!g_fb2k_profile.empty()) {
                 p_out->write(titleformat_inputtypes::unknown, g_fb2k_profile.c_str(), g_fb2k_profile.length());
@@ -65,7 +62,6 @@ namespace OpenHacksVars
         return false;
     }
 
-    // 实现 Title Format Hook 的函数处理
     bool PathVarHook::process_function(titleformat_text_out* p_out, const char* p_name, t_size p_name_length, titleformat_hook_function_params* p_params, bool& p_found_flag) {
         p_found_flag = false;
         return false;
@@ -73,7 +69,6 @@ namespace OpenHacksVars
 
     void InitialseOpenHacksVars()
     {
-        // 1. 计算路径逻辑
         const char* dllPath = core_api::get_my_full_path();
         bool isPortable = core_api::is_portable_mode_enabled();
 
@@ -103,14 +98,12 @@ namespace OpenHacksVars
             }
         }
 
-        // 2. 注入 Windows 环境变量（给 foo_run 等外部调用用）
         if (!g_fb2k_root.empty()) {
             SetEnvironmentVariableA("fb2k", g_fb2k_root.c_str());
             SetEnvironmentVariableA("foobar2000", g_fb2k_root.c_str());
             console::printf("[OpenHacks] Env vars injected: %s", g_fb2k_root.c_str());
         }
         
-        // 原有的伪标题栏逻辑
         auto& pseudoCaption = PseudoCaptionSettings.get_value();
         if (pseudoCaption.height == 0)
         {
@@ -122,3 +115,5 @@ namespace OpenHacksVars
     }
 
 } // namespace OpenHacksVars
+
+static service_factory_single_t<OpenHacksVars::PathVarHook> g_path_var_hook_factory;
