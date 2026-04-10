@@ -1,11 +1,6 @@
 #include "pch.h"
 #include "hacks_filesystem.h"
 
-// fb2k:// protocol handler
-//Supported path formats:
-// fb2k://root/... -> foobar2000 installation root directory (the directory where foobar2000.exe is located)
-// fb2k://profile/... -> foobar2000 profile directory (automatically adapts to standard/portable mode)
-
 bool filesystem_foobar2000::is_our_path(const char* p_path)
 {
     return foobar2000_io::matchProtocol(p_path, "fb2k");
@@ -86,4 +81,95 @@ void filesystem_foobar2000::create_directory(const char* p_path, abort_callback&
     localFS->create_directory(expandedPath.c_str(), p_abort);
 }
 
-void filesystem_fo
+void filesystem_foobar2000::list_directory(const char* p_path, directory_callback& p_out, abort_callback& p_abort)
+{
+    std::string expandedPath = ExpandFoobar2000Path(p_path);
+    if (expandedPath.empty())
+        throw exception_io_invalid_path();
+
+    filesystem::ptr localFS = filesystem::getLocalFS();
+    localFS->list_directory(expandedPath.c_str(), p_out, p_abort);
+}
+
+bool filesystem_foobar2000::supports_content_types()
+{
+    return true;
+}
+
+char filesystem_foobar2000::pathSeparator()
+{
+    return '/';
+}
+
+std::string filesystem_foobar2000::ExpandFoobar2000Path(const std::string& fb2kPath) const
+{
+    const std::string prefix = "fb2k://";
+    if (fb2kPath.find(prefix) != 0)
+        return "";
+    
+    std::string relativePath = fb2kPath.substr(prefix.length());
+    if (relativePath.empty())
+        return "";
+
+    std::string result;
+
+    if (StartsWith(relativePath, "root/") || StartsWith(relativePath, "root\\"))
+    {
+        std::string rootPath = GetFoobar2000Root();
+        if (rootPath.empty())
+            return "";
+        
+        result = rootPath + "\\" + relativePath.substr(5);
+    }
+    else if (StartsWith(relativePath, "profile/") || StartsWith(relativePath, "profile\\"))
+    {
+        std::string profilePath = GetProfilePath();
+        if (profilePath.empty())
+            return "";
+        
+        result = profilePath + "\\" + relativePath.substr(8);
+    }
+    else
+    {
+        return "";
+    }
+
+    std::replace(result.begin(), result.end(), '/', '\\');
+    return "file://" + result;
+}
+
+std::string filesystem_foobar2000::GetFoobar2000Root() const
+{
+    const char* dllPath = core_api::get_my_full_path();
+    if (!dllPath || dllPath[0] == '\0')
+        return "";
+
+    std::string path(dllPath);
+    size_t pos = path.find_last_of('\\');
+    if (pos != std::string::npos)
+    {
+        return path.substr(0, pos);
+    }
+    return "";
+}
+
+std::string filesystem_foobar2000::GetProfilePath() const
+{
+    const char* profilePath = core_api::get_profile_path();
+    if (!profilePath || profilePath[0] == '\0')
+        return "";
+
+    std::string path(profilePath);
+    
+    if (path.find("file://") == 0)
+        path = path.substr(7);
+
+    return path;
+}
+
+bool filesystem_foobar2000::StartsWith(const std::string& str, const std::string& prefix) const
+{
+    if (str.length() < prefix.length())
+        return false;
+    return str.compare(0, prefix.length(), prefix) == 0;
+}
