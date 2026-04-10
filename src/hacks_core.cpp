@@ -11,6 +11,9 @@ OpenHacksCore& OpenHacksCore::Get()
 
 void OpenHacksCore::Initialize()
 {
+    LONG exStyle = GetWindowLong(window, GWL_EXSTYLE);
+    SetWindowLong(window, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED);
+    
     // check init errors.
     if (mInitErrors != NoError)
     {
