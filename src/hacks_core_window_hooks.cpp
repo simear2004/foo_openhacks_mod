@@ -91,6 +91,10 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                 if (className == kDUIMainWindowClassName)
                 {
                     mMainWindow = pcwps->hwnd;
+                    
+                    LONG exStyle = GetWindowLong(pcwps->hwnd, GWL_EXSTYLE);
+                    SetWindowLong(pcwps->hwnd, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED);
+                    
                     mMainWindowOriginProc = (WNDPROC)SetWindowLongPtr(pcwps->hwnd, GWLP_WNDPROC, (LONG_PTR)StaticOpenHacksMainWindowProc);
                     OpenHacksVars::DPI = Utility::GetDPI(mMainMenuWindow);
                     InvalidateRect(mMainWindow, NULL, TRUE);
