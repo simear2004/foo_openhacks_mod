@@ -12,6 +12,9 @@ namespace OpenHacksVars
     std::string g_fb2k_root;
     std::string g_fb2k_profile;
     static std::vector<std::wstring> g_loadedFonts;
+    
+    // 全局 GDI+ 字体缓存集合，用于辅助进程内字体解析
+    static Gdiplus::PrivateFontCollection* g_pGlobalFontCache = nullptr;
 
     // {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
     static const GUID cfg_guid_show_main_menu = {0xa1b2c3d4, 0xe5f6, 0x7890, {0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90}};
@@ -51,10 +54,7 @@ namespace OpenHacksVars
         std::wstring searchPath = fontDir + L"\\*.*";
         
         HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findData);
-        if (hFind == INVALID_HANDLE_VALUE)
-        {
-            return;
-        }
+        if (hFind == INVALID_HANDLE_VALUE) return;
 
         std::vector<std::wstring> newFonts;
         
@@ -64,20 +64,18 @@ namespace OpenHacksVars
             {
                 std::wstring fileName = findData.cFileName;
                 size_t dotPos = fileName.find_last_of(L'.');
-                if (dotPos == std::wstring::npos || dotPos == fileName.size() - 1)
-                    continue;
-                    
+                if (dotPos == std::wstring::npos || dotPos == fileName.size() - 1) continue;
+                
                 std::wstring ext = fileName.substr(dotPos + 1);
                 std::transform(ext.begin(), ext.end(), ext.begin(), ::towlower);
                 
                 if (ext == L"ttf" || ext == L"ttc" || ext == L"otf")
                 {
                     std::wstring fullPath = fontDir + L"\\" + fileName;
-                    
+                    // 避免重复加载
                     if (std::find(g_loadedFonts.begin(), g_loadedFonts.end(), fullPath) == g_loadedFonts.end())
                     {
-                        int result = AddFontResourceW(fullPath.c_str());
-                        if (result > 0)
+                        if (AddFontResourceW(fullPath.c_str()) > 0)
                         {
                             newFonts.push_back(fullPath);
                         }
@@ -85,28 +83,62 @@ namespace OpenHacksVars
                 }
             }
         } while (FindNextFileW(hFind, &findData));
-
         FindClose(hFind);
         
         if (!newFonts.empty())
         {
             g_loadedFonts.insert(g_loadedFonts.end(), newFonts.begin(), newFonts.end());
             
+            // 1. 广播消息给传统 GDI 窗口
             SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 5000, nullptr);
             
-            Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-            ULONG_PTR gdiplusToken;
-            if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok)
+            // 2. 初始化全局 GDI+ 缓存集合
+            if (!g_pGlobalFontCache)
             {
-                Gdiplus::FontFamily fontFamily;
-                Gdiplus::Status status = fontFamily.GetFamilyName(L"Arial"); // 随便获取一个
-                if (status == Gdiplus::Ok)
-                {
-                    Gdiplus::Font* tempFont = new Gdiplus::Font(&fontFamily, 10.0f);
-                    if (tempFont) delete tempFont;
-                }
-                Gdiplus::GdiplusShutdown(gdiplusToken);
+                g_pGlobalFontCache = new Gdiplus::PrivateFontCollection();
             }
+
+            for (const auto& path : newFonts)
+            {
+                g_pGlobalFontCache->AddFontFile(path.c_str());
+            }
+
+            // 3. 【关键修复】强制 GDI 刷新：通过枚举触发内核同步
+            HDC hdc = GetDC(nullptr);
+            if (hdc)
+            {
+                LOGFONTW lf = {0};
+                lf.lfCharSet = DEFAULT_CHARSET;
+                EnumFontFamiliesExW(hdc, &lf, (FONTENUMPROCW)[](const ENUMLOGFONTEXW*, const NEWTEXTMETRICEXW*, DWORD, LPARAM) -> int { return 1; }, 0, 0);
+                ReleaseDC(nullptr, hdc);
+            }
+
+            // 4. 【关键修复】预热 GDI+ 缓存：显式创建字体对象以建立内部映射
+            int count = g_pGlobalFontCache->GetFamilyCount();
+            if (count > 0)
+            {
+                std::vector<Gdiplus::FontFamily> families(count);
+                int found = 0;
+                g_pGlobalFontCache->GetFamilies(count, &families[0], &found);
+                
+                for (int i = 0; i < found; i++)
+                {
+                    WCHAR name[LF_FACESIZE];
+                    families[i].GetFamilyName(name);
+                    
+                    // 尝试用 Regular 样式创建，确保基础字模被加载进 GDI+ 缓存
+                    Gdiplus::Font* pFont = new Gdiplus::Font(&families[i], 10.0f, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
+                    if (pFont)
+                    {
+                        // 只要 IsAvailable 为 true，说明 GDI+ 已经成功关联了该字体的数据
+                        bool bAvail = pFont->IsAvailable();
+                        delete pFont;
+                    }
+                }
+            }
+            
+            // 5. 短暂休眠，给系统一点时间完成底层字体表的同步
+            Sleep(50);
         }
     }
 
@@ -182,20 +214,21 @@ namespace OpenHacksVars
 
     void UnloadCustomFonts()
     {
-        if (g_loadedFonts.empty())
-        {
-            return;
-        }
+        if (g_loadedFonts.empty()) return;
         
         for (const auto& fontPath : g_loadedFonts)
         {
             RemoveFontResourceW(fontPath.c_str());
         }
         
-        g_loadedFonts.clear();
+        if (g_pGlobalFontCache)
+        {
+            delete g_pGlobalFontCache;
+            g_pGlobalFontCache = nullptr;
+        }
         
-        SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, 
-            SMTO_ABORTIFHUNG, 5000, nullptr);
+        g_loadedFonts.clear();
+        SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 5000, nullptr);
     }
 
 } // namespace OpenHacksVars
