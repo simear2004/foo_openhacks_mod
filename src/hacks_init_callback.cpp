@@ -24,8 +24,7 @@ public:
             
             if (OpenHacksVars::AutoLoadFonts)
             {
-                console::printf("[OpenHacks] Loading fonts before UI initialization...");
-                OpenHacksVars::LoadFontsAsync();
+                OpenHacksVars::LoadCustomFonts();
             }
         }
     }
