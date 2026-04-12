@@ -32,10 +32,16 @@ public:
     void on_init() override
     {
         OpenHacksCore::Get().Initialize();
+
+        if (OpenHacksVars::AutoLoadFonts)
+        {
+            OpenHacksVars::LoadFontsAsync();
+        }
     }
     // on_quit is called before the main window is destroyed.
     void on_quit() override
     {
+        OpenHacksVars::UnloadCustomFonts();
         // safe to clean up
         OpenHacksCore::Get().Finalize();
     }
