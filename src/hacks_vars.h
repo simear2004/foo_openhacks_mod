@@ -174,6 +174,6 @@ namespace OpenHacksVars
     }
 
     void InitialseOpenHacksVars();
-    void LoadFontsAsync();
+    void LoadCustomFonts();
     void UnloadCustomFonts();
 } // namespace OpenHacksVars
