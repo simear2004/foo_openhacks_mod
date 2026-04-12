@@ -14,7 +14,6 @@ function uiHacksSet() {
 	UIHacks.EnableWin10Shadow = true;                //win10下启用窗口阴影，活动窗口时会产生边框
 	UIHacks.DisableResizeWhenMaximized = true;       //最大化窗口时禁用窗口大小调整
 	UIHacks.DisableResizeWhenFullscreen = true;      //全屏时禁用窗口大小调整
-	UIHacks.AutoLoadFonts = true;                    //是否从profile\fonts文件夹中加载字体，放置太多字体可能会影响启动速度
 }
 
 //OpenHacks 仿真标题栏设置
