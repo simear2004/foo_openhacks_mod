@@ -83,7 +83,7 @@ namespace OpenHacksVars
                     }
                     else
                     {
-                        console::warning("[OpenHacks] Failed to load font: %s", 
+                        console::printf("[OpenHacks] Failed to load font: %s", 
                             pfc::stringcvt::string_utf8_from_wide(fileName.c_str()).get_ptr());
                     }
                 }
@@ -114,7 +114,7 @@ namespace OpenHacksVars
         
         if (g_fb2k_profile.empty())
         {
-            console::warning("[OpenHacks] Cannot load fonts: profile path is empty");
+            console::printf("[OpenHacks] Cannot load fonts: profile path is empty");
             return;
         }
         
@@ -134,7 +134,7 @@ namespace OpenHacksVars
                     }
                     else
                     {
-                        console::warning("[OpenHacks] Failed to create fonts directory: %s (Error: %lu)", 
+                        console::printf("[OpenHacks] Failed to create fonts directory: %s (Error: %lu)", 
                             pfc::stringcvt::string_utf8_from_wide(fontsDir.c_str()).get_ptr(), GetLastError());
                         return;
                     }
@@ -150,7 +150,7 @@ namespace OpenHacksVars
             }
             catch (const std::exception& e)
             {
-                console::error("[OpenHacks] Exception during font loading: %s", e.what());
+                console::printf("[OpenHacks] Exception during font loading: %s", e.what());
             }
         }).detach();
     }
@@ -221,7 +221,7 @@ namespace OpenHacksVars
             }
             else
             {
-                console::warning("[OpenHacks] Failed to remove font: %s", 
+                console::printf("[OpenHacks] Failed to remove font: %s", 
                     pfc::stringcvt::string_utf8_from_wide(fontPath.c_str()).get_ptr());
             }
         }
@@ -279,7 +279,7 @@ bool custom_path_field_provider::process_field(uint32_t index, metadb_handle* ha
     }
 
     if (path_str) {
-        //console::formatter() << "[OpenHacks Debug] %" << kDisplayFields[index].name << "% resolved to: " << path_str << "\n";
+        //console::printf() << "[OpenHacks Debug] %" << kDisplayFields[index].name << "% resolved to: " << path_str << "\n";
         out->write(titleformat_inputtypes::unknown, path_str, strlen(path_str));
         return true;
     }
