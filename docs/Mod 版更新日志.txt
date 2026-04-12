@@ -5,7 +5,7 @@ AutoLoadFonts = true; //是否从profile\fonts文件夹加载字体
 
 使用方法：
 1、颜色与字体 - 字体选择窗口中选择加载的字体
-2、foo_uie_jsplitter 或 foo_spider_monkey_panel 组件：
+2、foo_uie_jsplitter 或 foo_spider_monkey_panel 等组件：
 const font = gdi.Font("fontName", fontSize, fontStyle);
 
 v0.1.5.2 (2026041101)
