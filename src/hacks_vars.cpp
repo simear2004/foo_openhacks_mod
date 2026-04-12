@@ -2,9 +2,9 @@
 #include "hacks_vars.h"
 #include "win32_utils.h"
 #include <windows.h>
+#include <gdiplus.h>
 #include <string>
 #include <vector>
-#include <thread>
 
 namespace OpenHacksVars
 {
@@ -108,14 +108,47 @@ namespace OpenHacksVars
         {
             g_loadedFonts.insert(g_loadedFonts.end(), newFonts.begin(), newFonts.end());
             
-            console::printf("[OpenHacks] Broadcasting WM_FONTCHANGE to all windows...");
+            console::printf("[OpenHacks] Broadcasting WM_FONTCHANGE...");
             SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, 
                 SMTO_ABORTIFHUNG, 5000, nullptr);
             
-            console::printf("[OpenHacks] === Font loading completed successfully ===");
-            console::printf("[OpenHacks] Total: %d file(s), %d face(s) loaded and registered", 
+            console::printf("[OpenHacks] Forcing GDI+ font cache refresh...");
+            
+            Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+            ULONG_PTR gdiplusToken;
+            Gdiplus::Status status = Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+            
+            if (status == Gdiplus::Ok)
+            {
+                Gdiplus::PrivateFontCollection* pFontCollection = new Gdiplus::PrivateFontCollection();
+                
+                for (const auto& fontPath : newFonts)
+                {
+                    Gdiplus::Status addStatus = pFontCollection->AddFontFile(fontPath.c_str());
+                    if (addStatus == Gdiplus::Ok)
+                    {
+                        console::printf("[OpenHacks] ✓ GDI+ registered: %s", 
+                            pfc::stringcvt::string_utf8_from_wide(fontPath.c_str()).get_ptr());
+                    }
+                    else
+                    {
+                        console::printf("[OpenHacks] ✗ GDI+ failed to register: %s (Status: %d)", 
+                            pfc::stringcvt::string_utf8_from_wide(fontPath.c_str()).get_ptr(), addStatus);
+                    }
+                }
+                
+                delete pFontCollection;
+                Gdiplus::GdiplusShutdown(gdiplusToken);
+                
+                console::printf("[OpenHacks] GDI+ font cache refreshed");
+            }
+            else
+            {
+                console::printf("[OpenHacks] WARNING: Failed to initialize GDI+ (Status: %d)", status);
+            }
+            
+            console::printf("[OpenHacks] === Font loading completed: %d file(s), %d face(s) ===", 
                 (int)newFonts.size(), totalLoaded);
-            console::printf("[OpenHacks] NOTE: For SMP/GDI+, you may need to reload the panel or restart fb2k");
         }
         else if (fileCount > 0)
         {
@@ -250,16 +283,16 @@ namespace OpenHacksVars
     void UnloadCustomFonts()
     {
         console::printf("[OpenHacks] ========================================");
-        console::printf("[OpenHacks] Unloading custom fonts...");
+        console::printf("[OpenHacks] Unloading custom fonts");
         console::printf("[OpenHacks] ========================================");
         
         if (g_loadedFonts.empty())
         {
-            console::printf("[OpenHacks] No custom fonts to unload");
+            console::printf("[OpenHacks] No fonts to unload");
             return;
         }
             
-        console::printf("[OpenHacks] Unloading %d font file(s)...", (int)g_loadedFonts.size());
+        console::printf("[OpenHacks] Unloading %d font(s)...", (int)g_loadedFonts.size());
         
         int removedCount = 0;
         int failedCount = 0;
@@ -269,8 +302,6 @@ namespace OpenHacksVars
             if (RemoveFontResourceW(fontPath.c_str()))
             {
                 removedCount++;
-                console::printf("[OpenHacks] ✓ Unloaded: %s", 
-                    pfc::stringcvt::string_utf8_from_wide(fontPath.c_str()).get_ptr());
             }
             else
             {
@@ -285,16 +316,15 @@ namespace OpenHacksVars
         
         if (removedCount > 0)
         {
-            console::printf("[OpenHacks] Broadcasting WM_FONTCHANGE...");
             SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, 
                 SMTO_ABORTIFHUNG, 5000, nullptr);
             
-            console::printf("[OpenHacks] === Successfully unloaded %d font file(s) ===", removedCount);
+            console::printf("[OpenHacks] === Unloaded %d font(s) ===", removedCount);
         }
         
         if (failedCount > 0)
         {
-            console::printf("[OpenHacks] WARNING: Failed to unload %d font file(s)", failedCount);
+            console::printf("[OpenHacks] WARNING: Failed to unload %d font(s)", failedCount);
         }
     }
 
