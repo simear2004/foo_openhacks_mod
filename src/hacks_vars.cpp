@@ -12,7 +12,6 @@ namespace OpenHacksVars
     std::string g_fb2k_root;
     std::string g_fb2k_profile;
     static std::vector<std::wstring> g_loadedFonts;
-    static Gdiplus::PrivateFontCollection* g_pGlobalFontCollection = nullptr;
 
     // {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
     static const GUID cfg_guid_show_main_menu = {0xa1b2c3d4, 0xe5f6, 0x7890, {0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90}};
@@ -57,7 +56,6 @@ namespace OpenHacksVars
             return;
         }
 
-        int totalLoaded = 0;
         std::vector<std::wstring> newFonts;
         
         do
@@ -76,12 +74,13 @@ namespace OpenHacksVars
                 {
                     std::wstring fullPath = fontDir + L"\\" + fileName;
                     
-                    int result = AddFontResourceW(fullPath.c_str());
-                    
-                    if (result > 0)
+                    if (std::find(g_loadedFonts.begin(), g_loadedFonts.end(), fullPath) == g_loadedFonts.end())
                     {
-                        newFonts.push_back(fullPath);
-                        totalLoaded += result;
+                        int result = AddFontResourceW(fullPath.c_str());
+                        if (result > 0)
+                        {
+                            newFonts.push_back(fullPath);
+                        }
                     }
                 }
             }
@@ -93,17 +92,20 @@ namespace OpenHacksVars
         {
             g_loadedFonts.insert(g_loadedFonts.end(), newFonts.begin(), newFonts.end());
             
-            SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, 
-                SMTO_ABORTIFHUNG, 5000, nullptr);
+            SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 5000, nullptr);
             
-            if (!g_pGlobalFontCollection)
+            Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+            ULONG_PTR gdiplusToken;
+            if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok)
             {
-                g_pGlobalFontCollection = new Gdiplus::PrivateFontCollection();
-            }
-            
-            for (const auto& fontPath : newFonts)
-            {
-                g_pGlobalFontCollection->AddFontFile(fontPath.c_str());
+                Gdiplus::FontFamily fontFamily;
+                Gdiplus::Status status = fontFamily.GetFamilyName(L"Arial"); // 随便获取一个
+                if (status == Gdiplus::Ok)
+                {
+                    Gdiplus::Font* tempFont = new Gdiplus::Font(&fontFamily, 10.0f);
+                    if (tempFont) delete tempFont;
+                }
+                Gdiplus::GdiplusShutdown(gdiplusToken);
             }
         }
     }
@@ -188,12 +190,6 @@ namespace OpenHacksVars
         for (const auto& fontPath : g_loadedFonts)
         {
             RemoveFontResourceW(fontPath.c_str());
-        }
-        
-        if (g_pGlobalFontCollection)
-        {
-            delete g_pGlobalFontCollection;
-            g_pGlobalFontCollection = nullptr;
         }
         
         g_loadedFonts.clear();
