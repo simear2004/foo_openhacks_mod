@@ -13,6 +13,7 @@ namespace OpenHacksVars
     std::string g_fb2k_profile;
     static std::vector<std::wstring> g_loadedFonts;
     
+    // 全局 GDI+ 字体缓存集合，用于辅助进程内字体解析
     static Gdiplus::PrivateFontCollection* g_pGlobalFontCache = nullptr;
 
     // {A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
@@ -47,6 +48,12 @@ namespace OpenHacksVars
     // runtime vars
     uint32_t DPI = USER_DEFAULT_SCREEN_DPI;
 
+    // 用于强制刷新 GDI 字体缓存的回调函数
+    static int CALLBACK RefreshFontCacheProc(const ENUMLOGFONTEXW* lpelfe, const NEWTEXTMETRICEXW* lpntme, DWORD FontType, LPARAM lParam)
+    {
+        return 1; // 继续枚举
+    }
+
     static void LoadFontsFromDirectory(const std::wstring& fontDir)
     {
         WIN32_FIND_DATAW findData;
@@ -71,6 +78,7 @@ namespace OpenHacksVars
                 if (ext == L"ttf" || ext == L"ttc" || ext == L"otf")
                 {
                     std::wstring fullPath = fontDir + L"\\" + fileName;
+                    // 避免重复加载
                     if (std::find(g_loadedFonts.begin(), g_loadedFonts.end(), fullPath) == g_loadedFonts.end())
                     {
                         if (AddFontResourceW(fullPath.c_str()) > 0)
@@ -86,7 +94,11 @@ namespace OpenHacksVars
         if (!newFonts.empty())
         {
             g_loadedFonts.insert(g_loadedFonts.end(), newFonts.begin(), newFonts.end());
+            
+            // 1. 广播消息给传统 GDI 窗口
             SendMessageTimeoutW(HWND_BROADCAST, WM_FONTCHANGE, 0, 0, SMTO_ABORTIFHUNG, 5000, nullptr);
+            
+            // 2. 初始化全局 GDI+ 缓存集合
             if (!g_pGlobalFontCache)
             {
                 g_pGlobalFontCache = new Gdiplus::PrivateFontCollection();
@@ -97,15 +109,18 @@ namespace OpenHacksVars
                 g_pGlobalFontCache->AddFontFile(path.c_str());
             }
 
+            // 3. 【关键修复】强制 GDI 刷新：通过枚举触发内核同步
             HDC hdc = GetDC(nullptr);
             if (hdc)
             {
                 LOGFONTW lf = {0};
                 lf.lfCharSet = DEFAULT_CHARSET;
-                EnumFontFamiliesExW(hdc, &lf, (FONTENUMPROCW)[](const ENUMLOGFONTEXW*, const NEWTEXTMETRICEXW*, DWORD, LPARAM) -> int { return 1; }, 0, 0);
+                // 修正：使用标准函数指针，并确保参数正确（5个参数）
+                EnumFontFamiliesExW(hdc, &lf, (FONTENUMPROCW)RefreshFontCacheProc, 0, 0);
                 ReleaseDC(nullptr, hdc);
             }
 
+            // 4. 【关键修复】预热 GDI+ 缓存：显式创建字体对象以建立内部映射
             int count = g_pGlobalFontCache->GetFamilyCount();
             if (count > 0)
             {
@@ -118,15 +133,18 @@ namespace OpenHacksVars
                     WCHAR name[LF_FACESIZE];
                     families[i].GetFamilyName(name);
                     
+                    // 尝试用 Regular 样式创建，确保基础字模被加载进 GDI+ 缓存
                     Gdiplus::Font* pFont = new Gdiplus::Font(&families[i], 10.0f, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
                     if (pFont)
                     {
+                        // 只要 IsAvailable 为 true，说明 GDI+ 已经成功关联了该字体的数据
                         bool bAvail = pFont->IsAvailable();
                         delete pFont;
                     }
                 }
             }
             
+            // 5. 短暂休眠，给系统一点时间完成底层字体表的同步
             Sleep(50);
         }
     }
