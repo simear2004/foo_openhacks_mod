@@ -53,9 +53,6 @@ __interface IOpenHacks : IDispatch
     COM_PROPGET(DisableResizeWhenFullscreen, [out, retval] VARIANT_BOOL* pValue);
     COM_PROPPUT(DisableResizeWhenFullscreen, [in] VARIANT_BOOL value);
 
-    COM_PROPGET(AutoLoadFonts, [out, retval] VARIANT_BOOL* pValue);
-    COM_PROPPUT(AutoLoadFonts, [in] VARIANT_BOOL value);
-
     // PseudoCaptionSettings Properties
     COM_PROPGET(PseudoCaptionLeft, [out, retval] LONG* pValue);
     COM_PROPPUT(PseudoCaptionLeft, [in] LONG value);
