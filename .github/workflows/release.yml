@@ -76,7 +76,7 @@ jobs:
         id: find_component
         shell: pwsh
         run: |
-          $componentFile = Get-ChildItem -Path ${{env.SOLUTION_FILE_PATH}} -Filter "*_EN.fb2k-component" | Select-Object -First 1
+          $componentFile = Get-ChildItem -Path ${{env.SOLUTION_FILE_PATH}} -Filter "*_EN.fb2k-component" | Where-Object { $_.Name -match '_v\d+' } | Select-Object -First 1
           if ($componentFile) {
             echo "component_name=$($componentFile.Name)" >> $env:GITHUB_OUTPUT
             echo "Found component: $($componentFile.Name)"
