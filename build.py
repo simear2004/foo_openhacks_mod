@@ -66,7 +66,7 @@ def get_version_from_header():
         return "0.0.0.0"
 
 def create_component_package(temp_dir, version):
-    package_name = f'{PROJECT_NAME}_v{version}.fb2k-component'
+    package_name = f'{PROJECT_NAME}_v{version}_CN.fb2k-component'
     print(f'Creating component package {package_name}...')
     subprocess.run([
         SEVEN_ZIP_EXE, 'a', '-tzip', package_name, '.'
@@ -78,7 +78,7 @@ def create_component_package(temp_dir, version):
     shutil.copy2(src_path, dst_path)
     print(f"Copied to: {dst_path}")
     
-    also_copy_as = os.path.join(os.getcwd(), f'{PROJECT_NAME}.fb2k-component')
+    also_copy_as = os.path.join(os.getcwd(), f'{PROJECT_NAME}_CN.fb2k-component')
     shutil.copy2(src_path, also_copy_as)
     print(f"Also copied as: {also_copy_as}")
 
