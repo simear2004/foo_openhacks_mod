@@ -1,0 +1,87 @@
+name: MSBuild
+
+on:
+  workflow_dispatch:
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .
+
+  # Configuration type to build.
+  # You can convert this to a build matrix if you need coverage of multiple configuration types.
+  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.x'
+
+    - name: Setup vcpkg (x86)
+      uses: johnwason/vcpkg-action@v7
+      with:
+        manifest-dir: ${{ github.workspace }}
+        triplet: x86-windows-static-md
+        token: ${{ secrets.GITHUB_TOKEN }}
+        revision: b5d1a94fb7f88fd835e360fd23a45a09ceedbf48
+
+    - name: Setup vcpkg (x64)
+      uses: johnwason/vcpkg-action@v7
+      with:
+        manifest-dir: ${{ github.workspace }}
+        triplet: x64-windows-static-md
+        token: ${{ secrets.GITHUB_TOKEN }}
+        revision: b5d1a94fb7f88fd835e360fd23a45a09ceedbf48
+
+    - name: Integrate vcpkg with Visual Studio
+      shell: pwsh
+      run: |
+          & "${{ github.workspace }}\vcpkg\vcpkg.exe" integrate install
+          & "${{ github.workspace }}\vcpkg\vcpkg.exe" list
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v3
+      with:
+        vs-version: latest
+
+    - name: Create foobar2000 components directory
+      run: |
+        $platforms = @('win32', 'x64')
+        foreach ($platform in $platforms) {
+          $targetDir = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "..\foobar2000\$platform\foobar2000\components"
+          New-Item -ItemType Directory -Force -Path $targetDir
+        }
+      shell: pwsh
+
+    - name: Build
+      working-directory: ${{env.SOLUTION_FILE_PATH}}
+      run: python build.py --rebuild
+
+    - name: Find fb2k-component file
+      id: find_component
+      shell: pwsh
+      run: |
+        $componentFile = Get-ChildItem -Path ${{env.SOLUTION_FILE_PATH}} -Filter "*.fb2k-component" | Select-Object -First 1
+        if ($componentFile) {
+          echo "component_name=$($componentFile.Name)" >> $env:GITHUB_OUTPUT
+          echo "Found component: $($componentFile.Name)"
+        } else {
+          Write-Error "No .fb2k-component file found!"
+          exit 1
+        }
+
+    - name: Upload fb2k-component artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ steps.find_component.outputs.component_name }}
+        path: ${{env.SOLUTION_FILE_PATH}}/${{ steps.find_component.outputs.component_name }}

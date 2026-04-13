@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="ui\ui_dialog_base.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\ui_pref_advanced.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\ui_dark_mode.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ui\ui_pref_main_window.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_core.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_core_window_hooks.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_core_main_window_proc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_core_status_bar_proc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="win32_utils.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="ui_overlay_window.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="base_window.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="str.cpp">
+      <Filter>Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_core_rebar_proc.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_com_impl.cpp">
+      <Filter>COM</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_init_callback.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_main_menu.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_menu.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_vars.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_version.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="hacks_com_impl2.cpp">
+      <Filter>COM</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hacks_priv.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="ui\ui_dialog_base.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\ui_pref_advanced.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_guids.h" />
+    <ClInclude Include="ui\preferences_page_impl.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\ui_dark_mode.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\ui_pref_main_window.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_core.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="win32_types.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="win32_utils.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="ui_overlay_window.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="base_window.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="str.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_com_impl.h">
+      <Filter>COM</Filter>
+    </ClInclude>
+    <ClInclude Include="com_utils.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_com.h">
+      <Filter>COM</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_menu.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_vars.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="hacks_version.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{fbfbd986-5b94-4627-bd8a-13619f52c89d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{c74b4c2e-9441-4004-a1aa-5c92e8a016a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{7033eac8-fd1c-4a6b-91f7-186ed6d377aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utilities">
+      <UniqueIdentifier>{6b38c3ed-142b-46dc-b42b-cd250bb1760c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="COM">
+      <UniqueIdentifier>{9495ef38-1913-4250-882a-9eb1bf4e2cee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{4a7984fb-d911-497d-9b31-aec63138dbff}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="foo_openhacks.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\vcpkg.json">
+      <Filter>Resources</Filter>
+    </None>
+    <None Include="..\.clang-format">
+      <Filter>Resources</Filter>
+    </None>
+  </ItemGroup>
+</Project>

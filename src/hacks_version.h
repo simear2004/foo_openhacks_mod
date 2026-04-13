@@ -1,0 +1,9 @@
+#pragma once
+
+#define HACKS_VERSION_NUM "0.1.5.2"
+#define HACKS_VERSION_PREFIX ""
+#define HACKS_VERSION_SUFFIX ""
+
+#define HACKS_VERSION HACKS_VERSION_PREFIX HACKS_VERSION_NUM HACKS_VERSION_SUFFIX
+
+const char* GetOpenHacksAbout();

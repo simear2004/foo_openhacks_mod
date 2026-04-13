@@ -1,0 +1,167 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g., v0.1.5.0)'
+        required: true
+        default: 'v0.1.5.0'
+
+env:
+  SOLUTION_FILE_PATH: .
+  BUILD_CONFIGURATION: Release
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Setup vcpkg (x86)
+        uses: johnwason/vcpkg-action@v7
+        with:
+          manifest-dir: ${{ github.workspace }}
+          triplet: x86-windows-static-md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          revision: b5d1a94fb7f88fd835e360fd23a45a09ceedbf48
+
+      - name: Setup vcpkg (x64)
+        uses: johnwason/vcpkg-action@v7
+        with:
+          manifest-dir: ${{ github.workspace }}
+          triplet: x64-windows-static-md
+          token: ${{ secrets.GITHUB_TOKEN }}
+          revision: b5d1a94fb7f88fd835e360fd23a45a09ceedbf48
+
+      - name: Integrate vcpkg with Visual Studio
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}\vcpkg\vcpkg.exe" integrate install
+          & "${{ github.workspace }}\vcpkg\vcpkg.exe" list
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+        with:
+          vs-version: latest
+
+      - name: Create foobar2000 components directory
+        run: |
+          $platforms = @('win32', 'x64')
+          foreach ($platform in $platforms) {
+            $targetDir = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "..\foobar2000\$platform\foobar2000\components"
+            New-Item -ItemType Directory -Force -Path $targetDir
+          }
+        shell: pwsh
+
+      - name: Build
+        working-directory: ${{env.SOLUTION_FILE_PATH}}
+        run: python build.py --rebuild
+
+      - name: Find fb2k-component file
+        id: find_component
+        shell: pwsh
+        run: |
+          $componentFile = Get-ChildItem -Path ${{env.SOLUTION_FILE_PATH}} -Filter "*_EN.fb2k-component" | Where-Object { $_.Name -match '_v\d+' } | Select-Object -First 1
+          if ($componentFile) {
+            echo "component_name=$($componentFile.Name)" >> $env:GITHUB_OUTPUT
+            echo "Found component: $($componentFile.Name)"
+          } else {
+            Write-Error "No *_EN.fb2k-component file found!"
+            exit 1
+          }
+
+      - name: Upload fb2k-component artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.find_component.outputs.component_name }}
+          path: ${{env.SOLUTION_FILE_PATH}}/${{ steps.find_component.outputs.component_name }}
+
+      - name: Collect PDB files
+        run: |
+          New-Item -ItemType Directory -Force -Path pdb/x86, pdb/x64
+          Copy-Item -Path bin/Win32/Release/foo_openhacks_mod/foo_openhacks_mod.pdb -Destination pdb/x86/ -ErrorAction SilentlyContinue
+          Copy-Item -Path bin/x64/Release/foo_openhacks_mod/foo_openhacks_mod.pdb -Destination pdb/x64/ -ErrorAction SilentlyContinue
+        shell: pwsh
+
+      - name: Upload PDB artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: foo_openhacks_mod-pdb
+          path: pdb/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          
+      - name: Create Tag if not exists
+        run: |
+          TAG_NAME="${{ github.event.inputs.tag_name }}"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+            git push origin "$TAG_NAME"
+            echo "Tag $TAG_NAME created and pushed."
+          else
+            echo "Tag $TAG_NAME already exists."
+          fi
+
+      - name: Generate Changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: .github/cliff.toml
+          args: --latest
+        env:
+          OUTPUT: CHANGES.md
+
+      - name: Download fb2k-component artifact
+        uses: actions/download-artifact@v8
+        with:
+          pattern: "*_EN.fb2k-component"
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: Download PDB artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: foo_openhacks_mod-pdb
+          path: ./pdb
+
+      - name: Package PDB files
+        run: |
+          cd pdb && zip -r ../foo_openhacks_mod-pdb.zip .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          body: ${{ steps.changelog.outputs.content }}
+          files: |
+            artifacts/*.fb2k-component
+            foo_openhacks_mod-pdb.zip
