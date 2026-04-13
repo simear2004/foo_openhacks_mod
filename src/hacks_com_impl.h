@@ -71,9 +71,6 @@ public:
     STDMETHOD(get_DisableResizeWhenFullscreen)(VARIANT_BOOL* pValue);
     STDMETHOD(put_DisableResizeWhenFullscreen)(VARIANT_BOOL value);
 
-    STDMETHOD(get_AutoLoadFonts)(VARIANT_BOOL* pValue);
-    STDMETHOD(put_AutoLoadFonts)(VARIANT_BOOL value);
-
     // PseudoCaptionSettings Properties
     STDMETHOD(get_PseudoCaptionLeft)(LONG* pValue);
     STDMETHOD(put_PseudoCaptionLeft)(LONG value);
