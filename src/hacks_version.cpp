@@ -3,7 +3,7 @@
 
 static string_view_t OpenHacksFormatAbort = R"OH(OpenHacksMod v%s for foobar2000
 author: ohyeah
-Mod: YeYo
+Mod: YeYo (汉化: 智享阁)
 
 MSVC: v%s %s
 Compile: %s
