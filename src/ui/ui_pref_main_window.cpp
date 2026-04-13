@@ -5,7 +5,7 @@
 #include "hacks_vars.h"
 #include "hacks_guids.h"
 
-DECLARE_PREFERENCES_PAGE("Main window", UIPrefMainWindowDialog, 50.0, OpenHacksGuids::kMainWindowPageGuid, preferences_page::guid_display);
+DECLARE_PREFERENCES_PAGE("主窗口", UIPrefMainWindowDialog, 50.0, OpenHacksGuids::kMainWindowPageGuid, preferences_page::guid_display);
 
 namespace
 {
@@ -31,9 +31,9 @@ void UIPrefMainWindowDialog::OnInitDialog()
     SetHeaderFont(IDC_PREF_HEADER1);
 
     mComboFrameStyle.Attach(GetDlgItem(IDC_FRAME_STYLE));
-    mComboFrameStyle.AddString(TEXT("Default"));
-    mComboFrameStyle.AddString(TEXT("No caption"));
-    mComboFrameStyle.AddString(TEXT("No border"));
+    mComboFrameStyle.AddString(TEXT("默认"));
+    mComboFrameStyle.AddString(TEXT("无标题栏"));
+    mComboFrameStyle.AddString(TEXT("无边框"));
 
     LoadUIState();
     UpdateCtrlState();
