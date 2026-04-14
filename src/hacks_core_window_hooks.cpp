@@ -118,21 +118,7 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
 
             break;
         }
-
-        case WM_PAINT:
-        {
-            if (pcwps->hwnd == mMainWindow && mUsedCompositedStyle)
-            {
-                LONG exStyle = GetWindowLong(pcwps->hwnd, GWL_EXSTYLE);
-                if (exStyle & WS_EX_LAYERED)
-                {
-                    SetWindowLong(pcwps->hwnd, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
-                    InvalidateRect(pcwps->hwnd, NULL, FALSE);
-                }
-            }
-            break;
-        }
-
+        
         default:
             break;
         }
