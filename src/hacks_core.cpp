@@ -78,7 +78,7 @@ void OpenHacksCore::Initialize()
         if (mUsedCompositedStyle)
         {
             LONG exStyle = GetWindowLong(window, GWL_EXSTYLE);
-            SetWindowLong(window, GWL_EXSTYLE, exStyle & ~(WS_EX_COMPOSITED | WS_EX_LAYERED));
+            SetWindowLong(window, GWL_EXSTYLE, exStyle & ~WS_EX_COMPOSITED);
             mUsedCompositedStyle = false;
             
             RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
