@@ -250,21 +250,6 @@ bool OpenHacksCore::IsMinimized()
 void OpenHacksCore::EnterFullscreen()
 {
     HWND mainWindow = core_api::get_main_window();
-    // Save current window state
-    auto& state = mSavedWindowState.emplace();
-    state.fullscreen = true;
-    state.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
-    GetWindowPlacement(mainWindow, &state.wp);
-
-    Utility::EnterFullscreen(mainWindow, mSavedWindowState.value());
-
-    // Mark fullscreen state in persistent storage
-    OpenHacksVars::SavedWindowState.get_value().FromWindowState(state);
-}
-
-void OpenHacksCore::EnterFullscreen()
-{
-    HWND mainWindow = core_api::get_main_window();
     
     bool stateExisted = mSavedWindowState.has_value();
     auto& state = mSavedWindowState.emplace();
@@ -285,13 +270,13 @@ void OpenHacksCore::EnterFullscreen()
 void OpenHacksCore::ExitFullscreen()
 {
     HWND mainWindow = core_api::get_main_window();
+    // Exit fullscreen
     if (mSavedWindowState.has_value())
     {
-        auto savedState = mSavedWindowState.value();
-        
-        Utility::ExitFullscreen(mainWindow, savedState);
-        
+        Utility::ExitFullscreen(mainWindow, mSavedWindowState.value());
         mSavedWindowState.reset();
+
+        // Clear fullscreen state in persistent storage
         OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
     }
     else
