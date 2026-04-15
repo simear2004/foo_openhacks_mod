@@ -207,88 +207,34 @@ void OpenHacksCore::ApplyMainWindowFrameStyle(WindowFrameStyle newStyle)
 void OpenHacksCore::Maximize()
 {
     HWND mainWindow = core_api::get_main_window();
-    
-    console::printf("=== Maximize() START ===");
-    
+    // Initialize saved state if not already
     if (!mSavedWindowState.has_value())
-    {
-        console::printf("Maximize: mSavedWindowState was empty, creating new state");
         mSavedWindowState.emplace();
-    }
-    else
-    {
-        console::printf("Maximize: mSavedWindowState already exists");
-    }
-    
-    console::printf("Maximize: Before Utility::Maximize - wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
-        mSavedWindowState->wp.rcNormalPosition.left,
-        mSavedWindowState->wp.rcNormalPosition.top,
-        mSavedWindowState->wp.rcNormalPosition.right,
-        mSavedWindowState->wp.rcNormalPosition.bottom,
-        mSavedWindowState->wp.rcNormalPosition.right - mSavedWindowState->wp.rcNormalPosition.left,
-        mSavedWindowState->wp.rcNormalPosition.bottom - mSavedWindowState->wp.rcNormalPosition.top);
-    
     Utility::Maximize(mainWindow, mSavedWindowState.value());
-    
-    console::printf("Maximize: After Utility::Maximize - wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
-        mSavedWindowState->wp.rcNormalPosition.left,
-        mSavedWindowState->wp.rcNormalPosition.top,
-        mSavedWindowState->wp.rcNormalPosition.right,
-        mSavedWindowState->wp.rcNormalPosition.bottom,
-        mSavedWindowState->wp.rcNormalPosition.right - mSavedWindowState->wp.rcNormalPosition.left,
-        mSavedWindowState->wp.rcNormalPosition.bottom - mSavedWindowState->wp.rcNormalPosition.top);
-    
+    // Save to persistent storage
     OpenHacksVars::SavedWindowState.get_value().FromWindowState(mSavedWindowState.value());
-    
-    console::printf("=== Maximize() END ===");
 }
 
 void OpenHacksCore::Restore()
 {
     HWND mainWindow = core_api::get_main_window();
-    
-    console::printf("=== Restore() START ===");
-    
+    // Check if minimized - use standard restore
     if (Utility::IsMinimized(mainWindow))
     {
-        console::printf("Restore: Window is minimized, calling ShowWindow(SW_RESTORE)");
         ShowWindow(mainWindow, SW_RESTORE);
     }
     else if (mSavedWindowState.has_value())
     {
-        console::printf("Restore: mSavedWindowState exists, calling Utility::Restore");
-        console::printf("Restore: Saved wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
-            mSavedWindowState->wp.rcNormalPosition.left,
-            mSavedWindowState->wp.rcNormalPosition.top,
-            mSavedWindowState->wp.rcNormalPosition.right,
-            mSavedWindowState->wp.rcNormalPosition.bottom,
-            mSavedWindowState->wp.rcNormalPosition.right - mSavedWindowState->wp.rcNormalPosition.left,
-            mSavedWindowState->wp.rcNormalPosition.bottom - mSavedWindowState->wp.rcNormalPosition.top);
-        
-        RECT beforeRect;
-        GetWindowRect(mainWindow, &beforeRect);
-        console::printf("Restore: Before restore - window rect: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
-            beforeRect.left, beforeRect.top, beforeRect.right, beforeRect.bottom,
-            beforeRect.right - beforeRect.left, beforeRect.bottom - beforeRect.top);
-        
         Utility::Restore(mainWindow, mSavedWindowState.value());
-        
-        RECT afterRect;
-        GetWindowRect(mainWindow, &afterRect);
-        console::printf("Restore: After restore - window rect: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
-            afterRect.left, afterRect.top, afterRect.right, afterRect.bottom,
-            afterRect.right - afterRect.left, afterRect.bottom - afterRect.top);
-        
         mSavedWindowState.reset();
+        // Clear persistent storage
         OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
     }
     else
     {
-        console::printf("Restore: mSavedWindowState is empty, calling ShowWindow(SW_RESTORE)");
+        // No saved state - use standard restore
         ShowWindow(mainWindow, SW_RESTORE);
     }
-    
-    console::printf("=== Restore() END ===");
 }
 
 bool OpenHacksCore::IsMaximized()
@@ -311,11 +257,11 @@ void OpenHacksCore::EnterFullscreen()
         newState.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
         GetWindowPlacement(mainWindow, &newState.wp);
         mSavedWindowState = newState;
-        mWasMaximizedBeforeFullscreen = false;
+        mMaximizedBeforeFullscreen = false;
     }
     else
     {
-        mWasMaximizedBeforeFullscreen = true;
+        mMaximizedBeforeFullscreen = true;
     }
     
     mSavedWindowState->fullscreen = true;
@@ -336,9 +282,8 @@ void OpenHacksCore::ExitFullscreen()
         
         Utility::ExitFullscreen(mainWindow, savedState);
         
-        if (!hadCaption && mWasMaximizedBeforeFullscreen)
+        if (!hadCaption && mMaximizedBeforeFullscreen)
         {
-            // Was maximized, so re-maximize
             mSavedWindowState.reset();
             
             SetWindowLongPtr(mainWindow, GWL_STYLE, savedState.style);
@@ -361,6 +306,7 @@ void OpenHacksCore::ExitFullscreen()
     {
         const auto newStyle = static_cast<WindowFrameStyle>((int32_t)OpenHacksVars::MainWindowFrameStyle);
         ApplyMainWindowFrameStyle(newStyle);
+
         RECT rect = {};
         GetWindowRect(mainWindow, &rect);
         OffsetRect(&rect, 10, 10);
