@@ -253,9 +253,10 @@ void OpenHacksCore::EnterFullscreen()
     
     if (!mSavedWindowState.has_value())
     {
-        auto& state = mSavedWindowState.emplace();
-        state.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
-        GetWindowPlacement(mainWindow, &state.wp);
+        WindowState newState;
+        newState.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
+        GetWindowPlacement(mainWindow, &newState.wp);
+        mSavedWindowState = newState;
     }
     
     mSavedWindowState->fullscreen = true;
