@@ -250,15 +250,44 @@ bool OpenHacksCore::IsMinimized()
 void OpenHacksCore::EnterFullscreen()
 {
     HWND mainWindow = core_api::get_main_window();
-    // Save current window state
+    
+    // Check if window is in custom maximized state (NoCaption/NoBorder style and fills work area)
+    bool isCustomMaximized = false;
+    DWORD currentStyle = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
+    bool hasCaption = (currentStyle & WS_CAPTION) != 0;
+    
+    if (!hasCaption)
+    {
+        RECT windowRect, workArea;
+        GetWindowRect(mainWindow, &windowRect);
+        
+        HMONITOR monitor = MonitorFromWindow(mainWindow, MONITOR_DEFAULTTONEAREST);
+        if (monitor)
+        {
+            MONITORINFO mi = { sizeof(MONITORINFO) };
+            if (GetMonitorInfo(monitor, &mi))
+            {
+                workArea = mi.rcWork;
+                
+                if (windowRect.left == workArea.left &&
+                    windowRect.top == workArea.top &&
+                    windowRect.right == workArea.right &&
+                    windowRect.bottom == workArea.bottom)
+                {
+                    isCustomMaximized = true;
+                }
+            }
+        }
+    }
+    
     auto& state = mSavedWindowState.emplace();
     state.fullscreen = true;
-    state.style = static_cast<DWORD>(GetWindowLongPtr(mainWindow, GWL_STYLE));
+    state.style = currentStyle;
+    state.wasCustomMaximized = isCustomMaximized;
     GetWindowPlacement(mainWindow, &state.wp);
 
     Utility::EnterFullscreen(mainWindow, mSavedWindowState.value());
 
-    // Mark fullscreen state in persistent storage
     OpenHacksVars::SavedWindowState.get_value().FromWindowState(state);
 }
 
@@ -268,36 +297,17 @@ void OpenHacksCore::ExitFullscreen()
     if (mSavedWindowState.has_value())
     {
         auto savedState = mSavedWindowState.value();
-        
-        // Check if window had caption (standard style)
         bool hadCaption = (savedState.style & WS_CAPTION) != 0;
-        
-        // For custom styles (NoCaption/NoBorder), check if window was maximized before fullscreen
-        // Custom maximize is when mSavedWindowState exists and window style has no caption
-        bool wasCustomMaximized = !hadCaption && mSavedWindowState.has_value();
+        bool wasCustomMaximized = savedState.wasCustomMaximized;
         
         Utility::ExitFullscreen(mainWindow, savedState);
         
-        if (hadCaption)
+        mSavedWindowState.reset();
+        OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
+        
+        if (!hadCaption && wasCustomMaximized)
         {
-            // Standard style: Windows manages maximize state through wp.showCmd
-            // Clear saved state to allow normal restore behavior
-            mSavedWindowState.reset();
-            OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
-        }
-        else
-        {
-            // Custom style (NoCaption/NoBorder)
-            // After ExitFullscreen, window is restored to rcNormalPosition (normal state)
-            // We need to clear saved state because:
-            // 1. Window is now in normal state (not maximized)
-            // 2. Keeping mSavedWindowState would incorrectly indicate "maximized" state
-            // 3. This causes IsMaximized() to return true and disables resize
-            mSavedWindowState.reset();
-            OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
-            
-            // Note: If user wants to maximize again, they can click Maximize button
-            // This is consistent behavior: fullscreen exit always returns to normal state
+            Maximize();
         }
     }
     else
@@ -311,6 +321,7 @@ void OpenHacksCore::ExitFullscreen()
         SetWindowPos(mainWindow, nullptr, rect.left, rect.top, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOOWNERZORDER | SWP_NOZORDER);
     }
 }
+
 void OpenHacksCore::ToggleFullscreen()
 {
     HWND mainWindow = core_api::get_main_window();
