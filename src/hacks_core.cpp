@@ -306,7 +306,6 @@ void OpenHacksCore::ExitFullscreen()
     {
         const auto newStyle = static_cast<WindowFrameStyle>((int32_t)OpenHacksVars::MainWindowFrameStyle);
         ApplyMainWindowFrameStyle(newStyle);
-
         RECT rect = {};
         GetWindowRect(mainWindow, &rect);
         OffsetRect(&rect, 10, 10);
