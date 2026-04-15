@@ -291,10 +291,10 @@ void OpenHacksCore::Restore()
     console::printf("=== Restore() END ===");
 }
 
-bool OpenHacksCore::IsMaximized()
-{
-    return mSavedWindowState.has_value() || Utility::IsMaximized(core_api::get_main_window());
-}
+// bool OpenHacksCore::IsMaximized()
+// {
+//     return mSavedWindowState.has_value() || Utility::IsMaximized(core_api::get_main_window());
+// }
 
 bool OpenHacksCore::IsMinimized()
 {
@@ -315,20 +315,24 @@ void OpenHacksCore::EnterFullscreen()
         GetWindowPlacement(mainWindow, &newState.wp);
         mSavedWindowState = newState;
         
-        console::printf("EnterFullscreen: Created - wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d",
+        console::printf("EnterFullscreen: Created - wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
             mSavedWindowState->wp.rcNormalPosition.left,
             mSavedWindowState->wp.rcNormalPosition.top,
             mSavedWindowState->wp.rcNormalPosition.right,
-            mSavedWindowState->wp.rcNormalPosition.bottom);
+            mSavedWindowState->wp.rcNormalPosition.bottom,
+            mSavedWindowState->wp.rcNormalPosition.right - mSavedWindowState->wp.rcNormalPosition.left,
+            mSavedWindowState->wp.rcNormalPosition.bottom - mSavedWindowState->wp.rcNormalPosition.top);
     }
     else
     {
         console::printf("EnterFullscreen: Preserving existing wp");
-        console::printf("EnterFullscreen: Existing wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d",
+        console::printf("EnterFullscreen: Existing wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d (width=%d, height=%d)",
             mSavedWindowState->wp.rcNormalPosition.left,
             mSavedWindowState->wp.rcNormalPosition.top,
             mSavedWindowState->wp.rcNormalPosition.right,
-            mSavedWindowState->wp.rcNormalPosition.bottom);
+            mSavedWindowState->wp.rcNormalPosition.bottom,
+            mSavedWindowState->wp.rcNormalPosition.right - mSavedWindowState->wp.rcNormalPosition.left,
+            mSavedWindowState->wp.rcNormalPosition.bottom - mSavedWindowState->wp.rcNormalPosition.top);
     }
     
     mSavedWindowState->fullscreen = true;
@@ -339,7 +343,6 @@ void OpenHacksCore::EnterFullscreen()
         mSavedWindowState->wp.rcNormalPosition.right,
         mSavedWindowState->wp.rcNormalPosition.bottom);
 
-    // Pass a copy to prevent Utility::EnterFullscreen from modifying mSavedWindowState
     WindowState stateForFullscreen = mSavedWindowState.value();
     Utility::EnterFullscreen(mainWindow, stateForFullscreen);
     
@@ -395,7 +398,7 @@ void OpenHacksCore::ExitFullscreen()
             afterRect.left, afterRect.top, afterRect.right, afterRect.bottom,
             afterRect.right - afterRect.left, afterRect.bottom - afterRect.top);
         
-        // For custom styles (NoCaption/NoBorder), check if we need to re-maximize
+        // For custom styles, check if we need to re-maximize
         if (!hadCaption)
         {
             RECT workArea;
@@ -407,23 +410,26 @@ void OpenHacksCore::ExitFullscreen()
                 {
                     workArea = mi.rcWork;
                     
-                    // Check if the restored window size is smaller than work area
-                    // If so, it means the window was maximized before fullscreen
-                    int restoredWidth = afterRect.right - afterRect.left;
-                    int restoredHeight = afterRect.bottom - afterRect.top;
+                    int savedWidth = savedState.wp.rcNormalPosition.right - savedState.wp.rcNormalPosition.left;
+                    int savedHeight = savedState.wp.rcNormalPosition.bottom - savedState.wp.rcNormalPosition.top;
                     int workWidth = workArea.right - workArea.left;
                     int workHeight = workArea.bottom - workArea.top;
                     
-                    console::printf("ExitFullscreen: Work area: %dx%d, Restored: %dx%d", workWidth, workHeight, restoredWidth, restoredHeight);
+                    console::printf("ExitFullscreen: Work area: %dx%d, Saved normal size: %dx%d", workWidth, workHeight, savedWidth, savedHeight);
                     
-                    if (restoredWidth < workWidth || restoredHeight < workHeight)
+                    // If saved normal size is close to work area, it was maximized
+                    bool wasMaximized = (savedWidth > workWidth - 100 && savedHeight > workHeight - 100);
+                    
+                    console::printf("ExitFullscreen: wasMaximized = %s", wasMaximized ? "true" : "false");
+                    
+                    if (wasMaximized)
                     {
-                        console::printf("ExitFullscreen: Window was maximized before fullscreen, re-maximizing");
+                        console::printf("ExitFullscreen: Re-maximizing window");
                         
-                        // Clear the saved state first
+                        // Clear state first
                         mSavedWindowState.reset();
                         
-                        // Restore to normal state using saved rcNormalPosition
+                        // Restore to normal position first
                         SetWindowLongPtr(mainWindow, GWL_STYLE, savedState.style);
                         Utility::EnableWindowShadow(mainWindow, true);
                         
@@ -433,10 +439,10 @@ void OpenHacksCore::ExitFullscreen()
                         
                         SendMessage(mainWindow, WM_SIZE, 0, 0);
                         
-                        // Now maximize, which will save the current (normal) state as restore point
+                        // Now maximize, which saves the correct restore point
                         Maximize();
                         
-                        console::printf("ExitFullscreen: Re-maximized. New saved wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d",
+                        console::printf("ExitFullscreen: Done. New saved wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d",
                             mSavedWindowState->wp.rcNormalPosition.left,
                             mSavedWindowState->wp.rcNormalPosition.top,
                             mSavedWindowState->wp.rcNormalPosition.right,
@@ -449,10 +455,9 @@ void OpenHacksCore::ExitFullscreen()
             }
         }
         
-        // For standard style or non-maximized, clear the state
+        // Not maximized or standard style, just clear state
         mSavedWindowState.reset();
         console::printf("ExitFullscreen: mSavedWindowState cleared");
-        
         OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
     }
     else
@@ -469,6 +474,11 @@ void OpenHacksCore::ExitFullscreen()
     }
     
     console::printf("=== ExitFullscreen() END ===");
+}
+
+bool OpenHacksCore::IsMaximized()
+{
+    return Utility::IsMaximized(core_api::get_main_window());
 }
 
 void OpenHacksCore::ToggleFullscreen()
