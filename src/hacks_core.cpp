@@ -339,7 +339,9 @@ void OpenHacksCore::EnterFullscreen()
         mSavedWindowState->wp.rcNormalPosition.right,
         mSavedWindowState->wp.rcNormalPosition.bottom);
 
-    Utility::EnterFullscreen(mainWindow, mSavedWindowState.value());
+    // Pass a copy to prevent Utility::EnterFullscreen from modifying mSavedWindowState
+    WindowState stateForFullscreen = mSavedWindowState.value();
+    Utility::EnterFullscreen(mainWindow, stateForFullscreen);
     
     console::printf("EnterFullscreen: After Utility::EnterFullscreen - wp.rcNormalPosition: left=%d, top=%d, right=%d, bottom=%d",
         mSavedWindowState->wp.rcNormalPosition.left,
