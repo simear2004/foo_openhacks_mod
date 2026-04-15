@@ -239,7 +239,7 @@ void OpenHacksCore::Restore()
 
 bool OpenHacksCore::IsMaximized()
 {
-    return mSavedWindowState.has_value() || Utility::IsMaximized(core_api::get_main_window());
+    return Utility::IsMaximized(core_api::get_main_window());
 }
 
 bool OpenHacksCore::IsMinimized()
@@ -273,36 +273,11 @@ void OpenHacksCore::ExitFullscreen()
     if (mSavedWindowState.has_value())
     {
         auto savedState = mSavedWindowState.value();
-        bool hadCaption = (savedState.style & WS_CAPTION) != 0;
         
         Utility::ExitFullscreen(mainWindow, savedState);
         
-        mSavedWindowState.reset();
-        OpenHacksVars::SavedWindowState.get_value() = WindowStateData();
-        
-        if (!hadCaption)
-        {
-            RECT windowRect, workArea;
-            GetWindowRect(mainWindow, &windowRect);
-            
-            HMONITOR monitor = MonitorFromWindow(mainWindow, MONITOR_DEFAULTTONEAREST);
-            if (monitor)
-            {
-                MONITORINFO mi = { sizeof(MONITORINFO) };
-                if (GetMonitorInfo(monitor, &mi))
-                {
-                    workArea = mi.rcWork;
-                    
-                    if (windowRect.left == workArea.left &&
-                        windowRect.top == workArea.top &&
-                        windowRect.right == workArea.right &&
-                        windowRect.bottom == workArea.bottom)
-                    {
-                        Maximize();
-                    }
-                }
-            }
-        }
+        mSavedWindowState->fullscreen = false;
+        OpenHacksVars::SavedWindowState.get_value().FromWindowState(mSavedWindowState.value());
     }
     else
     {
