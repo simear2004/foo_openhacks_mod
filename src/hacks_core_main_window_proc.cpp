@@ -166,16 +166,6 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
         }
         break;
     }
-
-    case WM_WINDOWPOSCHANGED:
-    {
-        LPWINDOWPOS pwp = (LPWINDOWPOS)lp;
-        if (!(pwp->flags & SWP_NOSIZE))
-        {
-            RedrawWindow(wnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_NOERASE);
-        }
-        break;
-    }
         
     case WM_SYSCOMMAND:
         if (OnSysCommand(wnd, wp, lp))
