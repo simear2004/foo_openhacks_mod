@@ -156,19 +156,6 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
     {
     case WM_ERASEBKGND:
         return 1;
-
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(wnd, &ps);
-        
-        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-        FillRect(hdc, &ps.rcPaint, hBrush);
-        DeleteObject(hBrush);
-        
-        EndPaint(wnd, &ps);
-        return 0;
-    }
         
     case WM_SYSCOMMAND:
         if (OnSysCommand(wnd, wp, lp))
