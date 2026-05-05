@@ -147,6 +147,13 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
 
 bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
 {
+    LONG exStyle = GetWindowLong(wnd, GWL_EXSTYLE);
+    if (!(exStyle & WS_EX_LAYERED))
+    {
+        SetWindowLong(wnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+        SetLayeredWindowAttributes(wnd, 0, 0, LWA_ALPHA);
+    }
+    
     InvalidateRect(wnd, nullptr, FALSE);
     return false;
 }
