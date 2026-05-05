@@ -157,6 +157,16 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
     case WM_ERASEBKGND:
         return 1;
 
+    case WM_WINDOWPOSCHANGING:
+    {
+        LPWINDOWPOS pwp = (LPWINDOWPOS)lp;
+        if (!(pwp->flags & SWP_NOSIZE))
+        {
+            pwp->flags |= SWP_NOCOPYBITS;
+        }
+        break;
+    }
+
     case WM_WINDOWPOSCHANGED:
     {
         LPWINDOWPOS pwp = (LPWINDOWPOS)lp;
