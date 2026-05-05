@@ -146,8 +146,7 @@ bool OpenHacksCore::OnSetCursor(HWND wnd, WPARAM wp, LPARAM lp)
 }
 
 bool OpenHacksCore::OnSize(HWND wnd, WPARAM wp, LPARAM lp)
-{    
-    InvalidateRect(wnd, nullptr, FALSE);
+{
     return false;
 }
 
@@ -158,9 +157,15 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
     case WM_ERASEBKGND:
         return 1;
 
-    case WM_PAINT:
-        ValidateRect(wnd, nullptr);
-        return 0;
+    case WM_WINDOWPOSCHANGED:
+    {
+        LPWINDOWPOS pwp = (LPWINDOWPOS)lp;
+        if (!(pwp->flags & SWP_NOSIZE))
+        {
+            RedrawWindow(wnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_NOERASE);
+        }
+        break;
+    }
         
     case WM_SYSCOMMAND:
         if (OnSysCommand(wnd, wp, lp))
