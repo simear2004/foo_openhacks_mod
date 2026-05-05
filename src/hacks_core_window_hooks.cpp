@@ -110,6 +110,7 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                     
                     LONG exStyle = GetWindowLong(pcwps->hwnd, GWL_EXSTYLE);
                     SetWindowLong(pcwps->hwnd, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED | WS_CLIPCHILDREN);
+                    SetLayeredWindowAttributes(pcwps->hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
                     //SetLayeredWindowAttributes(pcwps->hwnd, 0, 0, LWA_ALPHA);
                     mUsedCompositedStyle = true;
                     
