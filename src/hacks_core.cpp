@@ -75,14 +75,14 @@ void OpenHacksCore::Initialize()
         // always send WM_SIZE in order to update rectangle stat internal.
         SendMessage(window, WM_SIZE, 0, 0);
 
-        if (mUsedCompositedStyle)
-        {
-            LONG exStyle = GetWindowLong(window, GWL_EXSTYLE);
-            SetWindowLong(window, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
-            mUsedCompositedStyle = false;
+        // if (mUsedCompositedStyle)
+        // {
+        //     LONG exStyle = GetWindowLong(window, GWL_EXSTYLE);
+        //     SetWindowLong(window, GWL_EXSTYLE, exStyle & ~WS_EX_LAYERED);
+        //     mUsedCompositedStyle = false;
             
-            RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
-        }
+        //     RedrawWindow(window, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+        // }
     }
 }
 
