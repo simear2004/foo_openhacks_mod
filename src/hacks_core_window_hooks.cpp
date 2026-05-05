@@ -105,13 +105,10 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                 if (className == kDUIMainWindowClassName)
                 {
                     mMainWindow = pcwps->hwnd;
-
-                    SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)GetStockObject(NULL_BRUSH));
                     
                     LONG exStyle = GetWindowLong(pcwps->hwnd, GWL_EXSTYLE);
                     SetWindowLong(pcwps->hwnd, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED | WS_CLIPCHILDREN);
-                    SetLayeredWindowAttributes(pcwps->hwnd, RGB(0, 0, 0), 0, LWA_COLORKEY);
-                    //SetLayeredWindowAttributes(pcwps->hwnd, 0, 0, LWA_ALPHA);
+                    SetLayeredWindowAttributes(pcwps->hwnd, 0, 0, LWA_ALPHA);
                     mUsedCompositedStyle = true;
                     
                     mMainWindowOriginProc = (WNDPROC)SetWindowLongPtr(pcwps->hwnd, GWLP_WNDPROC, (LONG_PTR)StaticOpenHacksMainWindowProc);
