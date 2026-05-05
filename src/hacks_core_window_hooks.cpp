@@ -109,8 +109,8 @@ LRESULT OpenHacksCore::OpenHacksCallWndProc(int code, WPARAM wp, LPARAM lp)
                     SetClassLongPtr(pcwps->hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)GetStockObject(NULL_BRUSH));
                     
                     LONG exStyle = GetWindowLong(pcwps->hwnd, GWL_EXSTYLE);
-                    SetWindowLong(pcwps->hwnd, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED | WS_EX_LAYERED);
-                    SetLayeredWindowAttributes(pcwps->hwnd, 0, 0, LWA_ALPHA);
+                    SetWindowLong(pcwps->hwnd, GWL_EXSTYLE, exStyle | WS_EX_COMPOSITED | WS_CLIPCHILDREN);
+                    //SetLayeredWindowAttributes(pcwps->hwnd, 0, 0, LWA_ALPHA);
                     mUsedCompositedStyle = true;
                     
                     mMainWindowOriginProc = (WNDPROC)SetWindowLongPtr(pcwps->hwnd, GWLP_WNDPROC, (LONG_PTR)StaticOpenHacksMainWindowProc);
