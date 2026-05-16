@@ -7,15 +7,17 @@ LRESULT OpenHacksCore::OpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM 
     switch (msg)
     {
     case RB_SHOWBAND:
-    {
-        if (OpenHacksVars::ShowMainMenu == false && mMainMenuWindow != nullptr)
-            break;
-        REBARBANDINFO rebarInfo = {};
-        rebarInfo.cbSize = sizeof(rebarInfo);
-        rebarInfo.fMask = RBBIM_CHILD;
-        SendMessage(wnd, RB_GETBANDINFO, wp, (LPARAM)&rebarInfo);
-        if (mMainMenuWindow == rebarInfo.hwndChild)
-            lp = static_cast<LPARAM>(OpenHacksVars::ShowMainMenu ? TRUE : FALSE);
+    if (mMainMenuWindow != nullptr)
+        {
+            REBARBANDINFO rebarInfo = {};
+            rebarInfo.cbSize = sizeof(rebarInfo);
+            rebarInfo.fMask = RBBIM_CHILD;
+            SendMessage(wnd, RB_GETBANDINFO, wp, (LPARAM)&rebarInfo);
+            if (mMainMenuWindow == rebarInfo.hwndChild)
+            {
+                lp = static_cast<LPARAM>(OpenHacksVars::ShowMainMenu ? TRUE : FALSE);
+            }
+        }
         break;
     }
 
