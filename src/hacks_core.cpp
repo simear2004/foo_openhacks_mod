@@ -98,18 +98,23 @@ bool OpenHacksCore::IsMainOrChildWindow(HWND wnd)
 
 POINT OpenHacksCore::GetBorderMetrics()
 {
+    // Modification: resizing check logic under different window border styles
     const int32_t cxFrame = Utility::GetSystemMetricsForDpi(SM_CXFRAME, OpenHacksVars::DPI);
     const int32_t cyFrame = Utility::GetSystemMetricsForDpi(SM_CYFRAME, OpenHacksVars::DPI);
     const int32_t cxPadding = Utility::GetSystemMetricsForDpi(SM_CXPADDEDBORDER, OpenHacksVars::DPI);
     
-    int32_t cx = cxFrame;
-    int32_t cy = cyFrame;
+    int32_t cx, cy;
 
-    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoCaption)
+    if (OpenHacksVars::MainWindowFrameStyle == WindowFrameStyleNoBorder)
+    {
+        cx = cxFrame;
+        cy = cyFrame;
+    }
+    else
     {
         cx = cxFrame + cxPadding;
         cy = cyFrame + cxPadding;
-    }
+    } //end
 
     return POINT{cx, cy};
 }
