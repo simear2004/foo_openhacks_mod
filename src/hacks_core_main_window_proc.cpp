@@ -176,6 +176,11 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
         break;
 
     case WM_SIZE:
+        if (mRebarWindow != nullptr)
+        {
+            ShowOrHideMenuBar(OpenHacksVars::ShowMainMenu);
+        }
+        
         if (OnSize(wnd, wp, lp))
             return 0;
         break;
