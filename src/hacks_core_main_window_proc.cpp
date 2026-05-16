@@ -178,7 +178,29 @@ LRESULT OpenHacksCore::OpenHacksMainWindowProc(HWND wnd, UINT msg, WPARAM wp, LP
     case WM_SIZE:
         if (OnSize(wnd, wp, lp))
             return 0;
+        if (mRebarWindow && mMainMenuWindow)
+        {
+            PostMessage(wnd, WM_USER + 1001, 0, 0);
+        }
         break;
+
+    case WM_ACTIVATE:
+        if (LOWORD(wp) != WA_INACTIVE && mRebarWindow && mMainMenuWindow)
+        {
+            PostMessage(wnd, WM_USER + 1001, 0, 0);
+        }
+        break;
+
+    case WM_USER + 1001:
+    {
+        bool shouldShow = OpenHacksVars::ShowMainMenu;
+        bool isShowing = IsMenuBarVisible();
+        if (shouldShow != isShowing)
+        {
+            ShowOrHideMenuBar(shouldShow);
+        }
+        return 0;
+    }
 
     case WM_DPICHANGED: // fixme: won't receive currently(DPI System aware).
         OpenHacksVars::DPI = static_cast<uint32_t>(LOWORD(wp));
