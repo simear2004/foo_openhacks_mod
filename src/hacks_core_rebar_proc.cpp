@@ -7,7 +7,8 @@ LRESULT OpenHacksCore::OpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM 
     switch (msg)
     {
     case RB_SHOWBAND:
-    if (mMainMenuWindow != nullptr)
+    {
+        if (mMainMenuWindow != nullptr)
         {
             REBARBANDINFO rebarInfo = {};
             rebarInfo.cbSize = sizeof(rebarInfo);
