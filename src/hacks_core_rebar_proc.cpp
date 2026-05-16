@@ -8,15 +8,20 @@ LRESULT OpenHacksCore::OpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM 
     {
     case RB_SHOWBAND:
     {
-        if (mMainMenuWindow == nullptr || OpenHacksVars::ShowMainMenu == true)
-            break;
-        REBARBANDINFO rebarInfo = {};
-        rebarInfo.cbSize = sizeof(rebarInfo);
-        rebarInfo.fMask = RBBIM_CHILD;
-        SendMessage(wnd, RB_GETBANDINFO, wp, (LPARAM)&rebarInfo);
-        if (mMainMenuWindow == rebarInfo.hwndChild)
-            lp = 0; // alter show flag anyway
-        break;
+        // Fix: The problem of displaying under special conditions when the menu bar is set to hidden
+        if (mMainMenuWindow != nullptr)
+        {
+            REBARBANDINFO rebarInfo = {};
+            rebarInfo.cbSize = sizeof(rebarInfo);
+            rebarInfo.fMask = RBBIM_CHILD;
+            
+            SendMessage(wnd, RB_GETBANDINFO, wp, (LPARAM)&rebarInfo);
+            
+            if (mMainMenuWindow == rebarInfo.hwndChild)
+            {
+                lp = static_cast<LPARAM>(OpenHacksVars::ShowMainMenu ? TRUE : FALSE);
+            }
+        } //end
     }
 
     case WM_NCDESTROY:
