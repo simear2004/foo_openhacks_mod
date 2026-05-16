@@ -15,7 +15,7 @@ LRESULT OpenHacksCore::OpenHacksReBarProc(HWND wnd, UINT msg, WPARAM wp, LPARAM 
         rebarInfo.fMask = RBBIM_CHILD;
         SendMessage(wnd, RB_GETBANDINFO, wp, (LPARAM)&rebarInfo);
         if (mMainMenuWindow == rebarInfo.hwndChild)
-            lp = 0; // alter show flag anyway
+            lp = static_cast<LPARAM>(OpenHacksVars::ShowMainMenu ? TRUE : FALSE);
         break;
     }
 
