@@ -327,3 +327,23 @@ STDMETHODIMP OpenHacksCOM::put_DisableResizeWhenFullscreen(VARIANT_BOOL value)
     OpenHacksVars::DisableResizeWhenFullscreen = TO_BOOLEAN(value);
     return S_OK;
 }
+
+STDMETHODIMP OpenHacksCOM::MinimizeToTray()
+{
+    auto ui_ctrl = ui_control::get();
+    if (ui_ctrl.is_valid())
+    {
+        ui_ctrl->hide();
+    }
+    return S_OK;
+}
+
+STDMETHODIMP OpenHacksCOM::CloseToTray()
+{
+    auto ui_ctrl = ui_control::get();
+    if (ui_ctrl.is_valid())
+    {
+        ui_ctrl->hide();
+    }
+    return S_OK;
+}
