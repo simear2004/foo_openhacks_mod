@@ -327,3 +327,23 @@ STDMETHODIMP OpenHacksCOM::put_DisableResizeWhenFullscreen(VARIANT_BOOL value)
     OpenHacksVars::DisableResizeWhenFullscreen = TO_BOOLEAN(value);
     return S_OK;
 }
+
+STDMETHODIMP OpenHacksCOM::OhMinimize()
+{
+    HWND mainWnd = core_api::get_main_window();
+    if (mainWnd && IsWindow(mainWnd))
+    {
+        PostMessage(mainWnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+    }
+    return S_OK;
+}
+
+STDMETHODIMP OpenHacksCOM::OhClose()
+{
+    HWND mainWnd = core_api::get_main_window();
+    if (mainWnd && IsWindow(mainWnd))
+    {
+        PostMessage(mainWnd, WM_SYSCOMMAND, SC_CLOSE, 0);
+    }
+    return S_OK;
+}
