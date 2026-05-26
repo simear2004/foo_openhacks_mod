@@ -1,6 +1,6 @@
 #pragma once
 
-#define HACKS_VERSION_NUM "0.1.5.5"
+#define HACKS_VERSION_NUM "0.1.5.6"
 #define HACKS_VERSION_PREFIX ""
 #define HACKS_VERSION_SUFFIX ""
 
