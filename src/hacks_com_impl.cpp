@@ -330,20 +330,22 @@ STDMETHODIMP OpenHacksCOM::put_DisableResizeWhenFullscreen(VARIANT_BOOL value)
 
 STDMETHODIMP OpenHacksCOM::MinimizeToTray()
 {
-    auto ui_ctrl = ui_control::get();
-    if (ui_ctrl.is_valid())
+    HWND mainWnd = core_api::get_main_window();
+    if (mainWnd && IsWindow(mainWnd))
     {
-        ui_ctrl->hide();
+        // 发送 SC_MINIMIZE 消息，让 foobar2000 自己处理
+        PostMessage(mainWnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
     }
     return S_OK;
 }
 
 STDMETHODIMP OpenHacksCOM::CloseToTray()
 {
-    auto ui_ctrl = ui_control::get();
-    if (ui_ctrl.is_valid())
+    HWND mainWnd = core_api::get_main_window();
+    if (mainWnd && IsWindow(mainWnd))
     {
-        ui_ctrl->hide();
+        // 发送 SC_CLOSE 消息，让 foobar2000 自己处理
+        PostMessage(mainWnd, WM_SYSCOMMAND, SC_CLOSE, 0);
     }
     return S_OK;
 }
