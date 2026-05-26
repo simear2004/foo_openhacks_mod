@@ -106,6 +106,8 @@ public:
     STDMETHOD(ToggleMenuBar)();
     STDMETHOD(ToggleStatusBar)();
     STDMETHOD(ToggleFullscreen)();
+    STDMETHOD(MinimizeToTray)();
+    STDMETHOD(CloseToTray)();
 
 private:
     static HRESULT HookCLSIDFromProgID();
