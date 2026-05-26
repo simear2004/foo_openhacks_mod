@@ -88,4 +88,6 @@ __interface IOpenHacks : IDispatch
     STDMETHOD(ToggleMenuBar)();
     STDMETHOD(ToggleStatusBar)();
     STDMETHOD(ToggleFullscreen)();
+    STDMETHOD(MinimizeToTray)();
+    STDMETHOD(CloseToTray)();
 };
